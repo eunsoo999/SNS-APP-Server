@@ -7,9 +7,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class PostUserReq {
+public class GetSearchUserRes {
+    private int userIdx;
+    private String profileUrl;
     private String userId;
-    private String password;
-    private String phone;
-    private String email;
+    private String name;
 }

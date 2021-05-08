@@ -7,9 +7,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class PostUserReq {
+public class FollowUser {
+    private int userIdx;
+    private String userProfileUrl;
     private String userId;
-    private String password;
-    private String phone;
-    private String email;
+    private String name;
+    private String followCheck;
 }

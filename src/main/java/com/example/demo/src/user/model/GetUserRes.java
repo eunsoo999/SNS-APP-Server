@@ -10,8 +10,12 @@ import lombok.Setter;
 @AllArgsConstructor
 public class GetUserRes {
     private int userIdx;
-    private String userName;
-    private String ID;
-    private String email;
-    private String password;
+    private String userId;
+    private String name;
+    private String profileUrl;
+    private String websiteUrl;
+    private String introduction;
+    private String postCount;
+    private String followerCount;
+    private String followingCount;
 }

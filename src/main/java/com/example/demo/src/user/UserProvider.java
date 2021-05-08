@@ -18,10 +18,8 @@ import static com.example.demo.config.BaseResponseStatus.*;
 //Provider : Read의 비즈니스 로직 처리
 @Service
 public class UserProvider {
-
     private final UserDao userDao;
     private final JwtService jwtService;
-
 
     final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -31,10 +29,21 @@ public class UserProvider {
         this.jwtService = jwtService;
     }
 
+    //전체 유저 List
     public List<GetUserRes> getUsers() throws BaseException{
         try{
             List<GetUserRes> getUserRes = userDao.getUsers();
             return getUserRes;
+        }
+        catch (Exception exception) {
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    public List<GetSearchUserRes> getUsersByKeyword(String keyword) throws BaseException{
+        try{
+            List<GetSearchUserRes> getUsersRes = userDao.getUsersByKeyword(keyword);
+            return getUsersRes;
         }
         catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
@@ -49,28 +58,87 @@ public class UserProvider {
         catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
         }
-                    }
+    }
 
+    //특정 유저 프로필
+    public GetUserRes getUser(String userId) throws BaseException {
+        if (checkUserId(userId) == 0) {
+            throw new BaseException(USERS_ID_NOT_EXISTS);
+        }
 
-    public GetUserRes getUser(int userIdx) throws BaseException {
         try {
-            GetUserRes getUserRes = userDao.getUser(userIdx);
+            GetUserRes getUserRes = userDao.getUser(userId);
             return getUserRes;
         } catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
         }
     }
 
-    public int checkEmail(String email) throws BaseException{
+    //함께 아는 친구 List
+    public List<FollowUser> retrieveCommonList(int loginIdx, int userIdx) throws BaseException{
+        if (checkUserIdx(userIdx) == 0) {
+            throw new BaseException(USERS_IDX_NOT_EXISTS);
+        }
         try{
-            return userDao.checkEmail(email);
+            return userDao.getCommonFollow(loginIdx, userIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    //특정 유저 팔로잉 List
+    public List<FollowUser> retrieveFollowingList(int loginIdx, int userIdx) throws BaseException{
+        if (checkUserIdx(userIdx) == 0) {
+            throw new BaseException(USERS_IDX_NOT_EXISTS);
+        }
+        try{
+            return userDao.getFollowing(loginIdx, userIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    //특정 유저 팔로워 List
+    public List<FollowUser> retrieveFollowerList(int loginIdx, int userIdx) throws BaseException{
+        if (checkUserIdx(userIdx) == 0) {
+            throw new BaseException(USERS_IDX_NOT_EXISTS);
+        }
+        try{
+            return userDao.getFollower(loginIdx ,userIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    //특정 유저 팔로잉 숫자
+    public String getFollowingCount(int userIdx) throws BaseException{
+        try{
+            return userDao.getFollowingCount(userIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    //특정 유저 팔로워 숫자
+    public String getFollowerCount(int userIdx) throws BaseException{
+        try{
+            return userDao.getFollowerCount(userIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    //함께 아는 친구 Count
+    public String getCommonFollowCount(int loginIdx, int userIdx) throws BaseException{
+        try{
+            return userDao.getCommonFollowCount(loginIdx, userIdx);
         } catch (Exception exception){
             throw new BaseException(DATABASE_ERROR);
         }
     }
 
     public PostLoginRes logIn(PostLoginReq postLoginReq) throws BaseException{
-        User user = userDao.getPwd(postLoginReq);
+        UserInfo user = userDao.getPwd(postLoginReq);
         String password;
         try {
             password = new AES128(Secret.USER_INFO_PASSWORD_KEY).decrypt(user.getPassword());
@@ -86,7 +154,39 @@ public class UserProvider {
         else{
             throw new BaseException(FAILED_TO_LOGIN);
         }
-
     }
+
+    public int checkUserIdx(int userIdx) throws BaseException{
+        try{
+            return userDao.checkUserIdx(userIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    public int checkUserId(String userId) throws BaseException{
+        try{
+            return userDao.checkUserId(userId);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    public int checkEmail(String email) throws BaseException{
+        try{
+            return userDao.checkEmail(email);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    public int checkPhone(String phone) throws BaseException{
+        try{
+            return userDao.checkPhone(phone);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
 
 }

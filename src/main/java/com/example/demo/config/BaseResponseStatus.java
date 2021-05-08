@@ -24,13 +24,49 @@ public enum BaseResponseStatus {
 
     // users
     USERS_EMPTY_USER_ID(false, 2010, "유저 아이디 값을 확인해주세요."),
+    USERS_EMPTY_USER_PW(false, 2011, "유저 비밀번호 값을 확인해주세요."),
+    USERS_ID_NOT_EXISTS(false,2012, "존재하지않는 아이디입니다."),
+    USERS_IDX_NOT_EXISTS(false,2013, "존재하지않는 유저입니다."),
 
     // [POST] /users
     POST_USERS_EMPTY_EMAIL(false, 2015, "이메일을 입력해주세요."),
     POST_USERS_INVALID_EMAIL(false, 2016, "이메일 형식을 확인해주세요."),
     POST_USERS_EXISTS_EMAIL(false,2017,"중복된 이메일입니다."),
+    POST_USERS_EMPTY_ID(false,2018, "아이디를 입력해주세요."),
+    POST_USERS_EMPTY_PW(false,2019, "패스워드를 입력해주세요."),
+    POST_USERS_EMPTY_PHONE_EMAIL(false,2020, "전화번호 또는 이메일을 입력해주세요."),
+    POST_USERS_INVALID_PHONE(false, 2021, "전화번호 형식을 확인해주세요."),
+    POST_USERS_INVALID_PASSWORD(false, 2022, "비밀번호 형식을 확인해주세요."),
+    POST_USERS_EXISTS_ID(false,2023, "중복된 아이디입니다."),
+    POST_USERS_EXISTS_PHONE(false, 2024, "중복된 전화번호입니다."),
 
+    // [POST] /storys
+    POST_STORY_EMPTY_VIDEO_URL(false, 2025, "사진이나 동영상을 업로드해주세요."),
+    DELETE_STORY_NOT_EXISTS(false,2026, "존재하지않는 스토리입니다."),
 
+    // [POST] /posts
+    POST_POSTS_EMPTY_IMAGE(false, 2030, "사진이나 동영상을 업로드해주세요."),
+    DELETE_POSTS_NOT_EXISTS(false, 2031, "존재하지않는 게시물입니다."),
+
+    // [PATCH] /posts
+    PATCH_POSTS_NOT_EXISTS(false, 2040, "존재하지않는 게시물입니다."),
+
+    // [GET] /search/history/type=
+    NOT_EXISTS_SEARCH_TYPE(false, 2050, "존재하지않는 검색타입입니다."),
+
+    INVALID_USERS_STATUS(false, 2060, "잘못된 계정 상태입니다."),
+
+    DELETE_SEARCH_HISTORY_NOT_EXISTS(false, 2070, "존재하지않는 검색기록입니다."),
+
+    // [POST] /highlights
+    POST_HIGHLIGHT_EMPTY_STORY(false, 2100, "하이라이트에 게시할 스토리를 선택해주세요."),
+    POST_HIGHLIGHT_EMPTY_THUMBNAIL(false, 2101, "썸네일 이미지를 업로드해주세요."),
+    HIGHLIGHT_NOT_EXISTS(false, 2110, "존재하지않는 하이라이트입니다."),
+
+    // [DELETE] /follows
+    FOLLOWS_NOT_EXISTS(false, 2200, "팔로우 상태가 아닙니다."),
+
+    SEARCH_EMPTY_KEYWORD(false, 2300, "검색어를 입력해주세요."),
 
     /**
      * 3000 : Response 오류
@@ -41,8 +77,6 @@ public enum BaseResponseStatus {
     // [POST] /users
     DUPLICATED_EMAIL(false, 3013, "중복된 이메일입니다."),
     FAILED_TO_LOGIN(false,3014,"없는 아이디거나 비밀번호가 틀렸습니다."),
-
-
 
     /**
      * 4000 : Database, Server 오류

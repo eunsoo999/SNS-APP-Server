@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="d26f4c89-90b1-4d60-afa5-5ab019d20c9d" name="spring-instagram" url="http://hellosilver.shop">
+        <fileTransfer rootFolder="/var/www/softsquared-instagram" accessType="SFTP" host="13.124.136.121" port="22" sshConfigId="46ec2797-bec0-4c8b-b944-b90a3e896896" sshConfig="ubuntu@13.124.136.121:22 key" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
