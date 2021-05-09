@@ -69,7 +69,7 @@ public enum BaseResponseStatus {
     SEARCH_EMPTY_KEYWORD(false, 2300, "검색어를 입력해주세요."),
 
     /**
-     * 3000 : Response 오류
+     * 3000 : Response 오류 - 이메일이 중복이되었다면? -> 존재하지않는 사용자라면 3000번대 에러다.
      */
     // Common
     RESPONSE_ERROR(false, 3000, "값을 불러오는데 실패하였습니다."),
