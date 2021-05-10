@@ -10,6 +10,7 @@ import com.example.demo.src.post.model.GetPostsRes;
 import com.example.demo.src.postImage.PostImageProvider;
 import com.example.demo.src.postImage.model.GetPostImagesRes;
 import com.example.demo.src.story.StoryProvider;
+import com.example.demo.src.story.model.GetStorysRes;
 import com.example.demo.src.story.model.GetUserStorysRes;
 import com.example.demo.src.user.model.*;
 import com.example.demo.utils.JwtService;
@@ -180,11 +181,13 @@ public class UserController {
      * @return BaseResponse<GetUserRes>
      */
     @ResponseBody
-    @GetMapping("/{userId}") // (GET) 127.0.0.1:9000/app/users/:userIdx
-    public BaseResponse<GetUserRes> getUser(@PathVariable("userId") String userId) {
+    @GetMapping("/{userIdx}") // (GET) 127.0.0.1:9000/app/users/:userIdx
+    public BaseResponse<GetUsersProfileRes> getUser(@PathVariable("userIdx") int userIdx) {
         try{
-            GetUserRes getUserRes = userProvider.getUser(userId);
-            return new BaseResponse<>(getUserRes);
+            GetUserRes getUserRes = userProvider.getUser(userIdx); //유저의 프로필 조회
+            List<GetPostsRes> getPostsResList = postProvider.getPostsByUserIdx(userIdx); //유저의 게시물조회
+            List<GetHighlightRes> getHighlightResList = highlightProvider.getHighlights(userIdx); // 유저의 하이라이트 폴더 조회
+            return new BaseResponse<>(new GetUsersProfileRes(getUserRes, getHighlightResList, getPostsResList));
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
         }
@@ -210,6 +213,24 @@ public class UserController {
     }
 
     /**
+     * 유저 추천 API
+     * [GET] /users/recommend
+     */
+    @ResponseBody
+    @GetMapping("/recommend") // (GET) 127.0.0.1:9000/users/:userIdx/following
+    public BaseResponse<List<GetRecommendUsersRes>> getRecommendUsers() {
+        int loginIdx = 1; //todo 로그인 유저 수정
+
+        try{
+            List<GetRecommendUsersRes> result = userProvider.retrieveRecommendUsers(loginIdx);
+            return new BaseResponse<>(result);
+        } catch(BaseException exception){
+            return new BaseResponse<>((exception.getStatus()));
+        }
+    }
+
+
+    /**
      * 유저 팔로잉 조회 API
      * [GET] /users/:userIdx/following
      * @return BaseResponse<GetFollowUserRes>
@@ -221,10 +242,12 @@ public class UserController {
 
         try{
             List<FollowUser> getUserRes = userProvider.retrieveFollowingList(loginIdx, userIdx);
+            List<GetRecommendUsersRes> getRecommendUsersList = userProvider.retrieveRecommendUsers(loginIdx);
+
             String commonFollowCount = userProvider.getCommonFollowCount(loginIdx, userIdx);
             String followerCount = userProvider.getFollowerCount(userIdx);
             String followingCount = userProvider.getFollowingCount(userIdx);
-            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes);
+            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes, getRecommendUsersList);
             return new BaseResponse<>(result);
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
@@ -243,10 +266,11 @@ public class UserController {
         //todo 로그인 유저 수정
         try{
             List<FollowUser> getUserRes = userProvider.retrieveFollowerList(loginIdx, userIdx);
+            List<GetRecommendUsersRes> getRecommendUsersList = userProvider.retrieveRecommendUsers(loginIdx);
             String commonFollowCount = userProvider.getCommonFollowCount(loginIdx, userIdx);
             String followerCount = userProvider.getFollowerCount(userIdx);
             String followingCount = userProvider.getFollowingCount(userIdx);
-            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes);
+            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes, getRecommendUsersList);
             return new BaseResponse<>(result);
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
@@ -260,15 +284,16 @@ public class UserController {
      */
     @ResponseBody
     @GetMapping("/{userIdx}/common") // (GET) 127.0.0.1:9000/users/:userIdx/common
-    public BaseResponse<GetFollowUserRes> getCommonUser(@PathVariable("userIdx") int userIdx) {
+    public BaseResponse<GetCommonUserRes> getCommonUser(@PathVariable("userIdx") int userIdx) {
         int loginIdx = 1; //로그인 유저idx
         //todo 로그인 유저 수정
         try{
             List<FollowUser> getUserRes = userProvider.retrieveCommonList(loginIdx, userIdx);
+            List<GetRecommendUsersRes> getRecommendUsersList = userProvider.retrieveRecommendUsers(loginIdx);
             String commonFollowCount = userProvider.getCommonFollowCount(loginIdx, userIdx);
             String followerCount = userProvider.getFollowerCount(userIdx);
             String followingCount = userProvider.getFollowingCount(userIdx);
-            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes);
+            GetCommonUserRes result = new GetCommonUserRes(commonFollowCount, followerCount, followingCount, getUserRes, getRecommendUsersList);
             return new BaseResponse<>(result);
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
@@ -296,21 +321,21 @@ public class UserController {
         }
     }
 
-    /**
-     * 특정 유저의 게시글 미리보기 API
-     * [GET] /users/:userIdx/posts
-     * @return BaseResponse<List<GetPostRes>>
-     */
-    @ResponseBody
-    @GetMapping("/{userIdx}/posts")
-    public BaseResponse<List<GetPostsRes>> getUsersPosts(@PathVariable int userIdx) {
-        try {
-            List<GetPostsRes> getPostList = postProvider.getPostsByUserIdx(userIdx);
-            return new BaseResponse<>(getPostList);
-        } catch (BaseException exception) {
-            return new BaseResponse<>((exception.getStatus()));
-        }
-    }
+//    /**
+//     * 특정 유저의 게시글 미리보기 API
+//     * [GET] /users/:userIdx/posts
+//     * @return BaseResponse<List<GetPostRes>>
+//     */
+//    @ResponseBody
+//    @GetMapping("/{userIdx}/posts")
+//    public BaseResponse<List<GetPostsRes>> getUsersPosts(@PathVariable int userIdx) {
+//        try {
+//            List<GetPostsRes> getPostList = postProvider.getPostsByUserIdx(userIdx);
+//            return new BaseResponse<>(getPostList);
+//        } catch (BaseException exception) {
+//            return new BaseResponse<>((exception.getStatus()));
+//        }
+//    }
 
     /**
      * 특정 유저의 스토리 조회 API
@@ -328,22 +353,22 @@ public class UserController {
         }
     }
 
-    /**
-     * 특정 유저의 하이라이트 폴더 조회 API
-     * [GET] /users/:userIdx/highlights
-     * @return BaseResponse<List<GetHighlightRes>>
-     */
-    @ResponseBody
-    @GetMapping("/{userIdx}/highlights")
-    public BaseResponse<List<GetHighlightRes>> getHighlights(@PathVariable("userIdx") int userIdx) {
-        try{
-            List<GetHighlightRes> getHighlightRes = highlightProvider.getHighlights(userIdx);
-            return new BaseResponse<>(getHighlightRes);
-        }
-        catch(BaseException exception){
-            return new BaseResponse<>((exception.getStatus()));
-        }
-    }
+//    /**
+//     * 특정 유저의 하이라이트 폴더 조회 API
+//     * [GET] /users/:userIdx/highlights
+//     * @return BaseResponse<List<GetHighlightRes>>
+//     */
+//    @ResponseBody
+//    @GetMapping("/{userIdx}/highlights")
+//    public BaseResponse<List<GetHighlightRes>> getHighlights(@PathVariable("userIdx") int userIdx) {
+//        try{
+//            List<GetHighlightRes> getHighlightRes = highlightProvider.getHighlights(userIdx);
+//            return new BaseResponse<>(getHighlightRes);
+//        }
+//        catch(BaseException exception){
+//            return new BaseResponse<>((exception.getStatus()));
+//        }
+//    }
 
     /**
      * 유저정보변경 API
@@ -370,5 +395,64 @@ public class UserController {
 //            return new BaseResponse<>((exception.getStatus()));
 //        }
 //    }
+
+//    /**
+//     * 나의 팔로잉 조회 API
+//     * [GET] /users/myfollowing
+//     * @return BaseResponse<GetFollowUserRes>
+//     */
+//    @ResponseBody
+//    @GetMapping("/myfollowing") // (GET) 127.0.0.1:9000/users/:userIdx/following
+//    public BaseResponse<GetFollowUserRes> getmyFollowingUser(@PathVariable("userIdx") int userIdx, @RequestParam(required = false) String sort) {
+//        int loginIdx = 1; //todo 로그인 유저 수정
+//
+//        if (sort != null && (!sort.equalsIgnoreCase("followingdate_asc") && !sort.equalsIgnoreCase("followingdate_desc"))) {
+//            return new BaseResponse<>(TEST_ERROR);
+//        }
+//
+//        try{
+//            List<FollowUser> getUserRes = userProvider.retrieveFollowingList(loginIdx, userIdx, sort);
+//            String commonFollowCount = userProvider.getCommonFollowCount(loginIdx, userIdx);
+//            String followerCount = userProvider.getFollowerCount(userIdx);
+//            String followingCount = userProvider.getFollowingCount(userIdx);
+//            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes);
+//            return new BaseResponse<>(result);
+//        } catch(BaseException exception){
+//            return new BaseResponse<>((exception.getStatus()));
+//        }
+//    }
 }
+
+//    /**
+//     * 유저 팔로잉 조회 API
+//     * [GET] /users/:userIdx/following
+//     * @return BaseResponse<GetFollowUserRes>
+//     */
+//    @ResponseBody
+//    @GetMapping("/{userIdx}/following") // (GET) 127.0.0.1:9000/users/:userIdx/following
+//    public BaseResponse<GetFollowUserRes> getFollowingUser(@PathVariable("userIdx") int userIdx, @RequestParam(required = false) String sort) {
+//        int loginIdx = 1; //todo 로그인 유저 수정
+//
+//        if (sort != null && (!sort.equalsIgnoreCase("followingdate_asc") && !sort.equalsIgnoreCase("followingdate_desc"))) {
+//            return new BaseResponse<>(TEST_ERROR);
+//        }
+//
+//        try{
+//            List<FollowUser> getUserRes;
+//            //todo 만약 해당 userIdx가 나라면? -> 정렬이 되는 메소드로
+//            if (userIdx == 1) {
+//                getUserRes = userProvider.retrieveMyFollowingList(sort);
+//            } else {
+//                getUserRes = userProvider.retrieveFollowingList(loginIdx, userIdx);
+//            }
+//
+//            String commonFollowCount = userProvider.getCommonFollowCount(loginIdx, userIdx);
+//            String followerCount = userProvider.getFollowerCount(userIdx);
+//            String followingCount = userProvider.getFollowingCount(userIdx);
+//            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes);
+//            return new BaseResponse<>(result);
+//        } catch(BaseException exception){
+//            return new BaseResponse<>((exception.getStatus()));
+//        }
+//
 

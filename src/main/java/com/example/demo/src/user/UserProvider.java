@@ -61,13 +61,13 @@ public class UserProvider {
     }
 
     //특정 유저 프로필
-    public GetUserRes getUser(String userId) throws BaseException {
-        if (checkUserId(userId) == 0) {
+    public GetUserRes getUser(int userIdx) throws BaseException {
+        if (checkUserIdx(userIdx) == 0) {
             throw new BaseException(USERS_ID_NOT_EXISTS);
         }
 
         try {
-            GetUserRes getUserRes = userDao.getUser(userId);
+            GetUserRes getUserRes = userDao.getUser(userIdx);
             return getUserRes;
         } catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
@@ -93,6 +93,17 @@ public class UserProvider {
         }
         try{
             return userDao.getFollowing(loginIdx, userIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    //나의 유저 팔로잉 List
+    public List<FollowUser> retrieveMyFollowingList(String sort) throws BaseException{
+        // todo jwt
+        int loginIdx = 1;
+        try{
+            return userDao.getMyFollowing(loginIdx, sort);
         } catch (Exception exception){
             throw new BaseException(DATABASE_ERROR);
         }
@@ -127,6 +138,8 @@ public class UserProvider {
             throw new BaseException(DATABASE_ERROR);
         }
     }
+
+    //
 
     //함께 아는 친구 Count
     public String getCommonFollowCount(int loginIdx, int userIdx) throws BaseException{
@@ -188,5 +201,12 @@ public class UserProvider {
         }
     }
 
+    public List<GetRecommendUsersRes> retrieveRecommendUsers(int loginIdx) throws BaseException {
+        try{
+            return userDao.getRecommendUsers(loginIdx);
+        } catch (Exception exception){
+            throw new BaseException(DATABASE_ERROR);
+        }
 
+    }
 }

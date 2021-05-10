@@ -17,11 +17,13 @@ public class FollowService {
 
     private final FollowDao followDao;
     private final UserProvider userProvider;
+    private final FollowProvider followProvider;
 
     @Autowired
-    public FollowService(FollowDao followDao, UserProvider userProvider) {
+    public FollowService(FollowDao followDao, UserProvider userProvider, FollowProvider followProvider) {
         this.followDao = followDao;
         this.userProvider = userProvider;
+        this.followProvider = followProvider;
     }
 
     public PostFollowRes createFollow(PostFollowReq postFollowReq, int loginIdx) throws BaseException{
@@ -29,14 +31,15 @@ public class FollowService {
         if (userProvider.checkUserIdx(postFollowReq.getFollowingUserIdx()) == 0) {
             throw new BaseException(USERS_IDX_NOT_EXISTS);
         }
-        // 유저 계정 상태 확인
-        if (!postFollowReq.getFollowingUserStatus().equals("PUBLIC")
-                && !postFollowReq.getFollowingUserStatus().equals("PRIVATE")) {
-            throw new BaseException(INVALID_USERS_STATUS);
+
+        // 이미 팔로우 상태인지 확인
+        if (followProvider.checkFollow(loginIdx, postFollowReq.getFollowingUserIdx()) == 1) {
+            throw new BaseException(DUPLICATED_FOLLOWS);
         }
+
         try{
             int followIdx = followDao.createFollow(postFollowReq, loginIdx);
-            return new PostFollowRes(followIdx, postFollowReq.getFollowingUserIdx(), loginIdx);
+            return new PostFollowRes(followIdx);
         }
         catch (Exception exception){
             throw new BaseException(DATABASE_ERROR);
@@ -48,7 +51,10 @@ public class FollowService {
             throw new BaseException(FOLLOWS_NOT_EXISTS);
         }
         try {
-            followDao.deleteFollow(followIdx);
+            int deletedCount = followDao.deleteFollow(followIdx);
+            if (deletedCount != 1) {
+                throw new BaseException(PATCH_STATUS_FAIL);
+            }
         } catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
         }

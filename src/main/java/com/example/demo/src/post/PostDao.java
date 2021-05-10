@@ -1,7 +1,11 @@
 package com.example.demo.src.post;
 
+import com.example.demo.src.PostLike.model.GetPostLikes;
+import com.example.demo.src.PostLike.model.PostLike;
+import com.example.demo.src.follow.model.Follow;
 import com.example.demo.src.post.model.GetPostsFeedRes;
 import com.example.demo.src.post.model.GetPostsRes;
+import com.example.demo.src.post.model.Post;
 import com.example.demo.src.post.model.PostPostReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -155,5 +159,30 @@ public class PostDao {
         String checkPostIdxQuery = "select exists(select idx from Post where idx = ? and status != 'N')";
         int checkPostIdxParams = postIdx;
         return this.jdbcTemplate.queryForObject(checkPostIdxQuery, int.class, checkPostIdxParams);
+    }
+
+    public List<GetPostLikes> retrievePostLikedUsers(int postIdx, int loginIdx) {
+        String retrievePostLikedUsersQuery = "SELECT PostLike.userIdx, User.profileUrl, User.userId, User.name, " +
+                "CASE WHEN User.idx IN (SELECT followingUserIdx FROM Follow WHERE userIdx = ? AND status = 'ACTIVE') " +
+                "THEN '팔로잉' " +
+                "WHEN User.idx IN (SELECT followingUserIdx FROM Follow WHERE userIdx = ? AND status = 'WAIT') " +
+                "THEN '요청됨' " +
+                "WHEN User.idx = ? " +
+                "THEN '-' " +
+                "ELSE '팔로우' " +
+                "END as followCheck " +
+                "FROM PostLike INNER JOIN User ON PostLike.userIdx = User.idx INNER JOIN Post ON PostLike.postIdx = Post.idx " +
+                "WHERE PostLike.postIdx = ? AND PostLike.status = 'Y' AND Post.status != 'N' " +
+                "order by FIELD(followCheck, '-', '팔로잉', '팔로우')";
+
+        Object[] postLikedUsersParams = new Object[]{loginIdx, loginIdx, loginIdx, postIdx};
+
+        return this.jdbcTemplate.query(retrievePostLikedUsersQuery,
+                (rs, rowNum) -> new GetPostLikes(
+                        rs.getInt("userIdx"),
+                        rs.getString("profileUrl"),
+                        rs.getString("userId"),
+                        rs.getString("name"),
+                        rs.getString("followCheck")), postLikedUsersParams);
     }
 }

@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import static com.example.demo.config.BaseResponseStatus.*;
+
 @RestController
 @RequestMapping("/follows")
 public class FollowController {
@@ -32,6 +34,11 @@ public class FollowController {
     @ResponseBody
     @PostMapping("")
     public BaseResponse<PostFollowRes> postFollows(@RequestBody PostFollowReq postFollowReq) {
+        if (!postFollowReq.getFollowingUserStatus().equals("PUBLIC")
+                && !postFollowReq.getFollowingUserStatus().equals("PRIVATE")) {
+            return new BaseResponse<>(INVALID_USERS_STATUS);
+        }
+
         int loginIdx = 1; //todo 로그인 유저 수정
         try{
             PostFollowRes postFollowRes = followService.createFollow(postFollowReq, loginIdx);
@@ -44,14 +51,14 @@ public class FollowController {
 
     /**
      * 팔로우 취소 API
-     * [DELETE] /follows/:followIdx
+     * [PATCH] /follows/:followIdx
      */
     @ResponseBody
-    @DeleteMapping("/{followIdx}")
+    @PatchMapping("/{followIdx}/status")
     public BaseResponse<String> deleteFollow(@PathVariable int followIdx) {
         try {
             followService.deleteFollow(followIdx);
-            String result = "";
+            String result = "정상적으로 취소되었습니다.";
             return new BaseResponse<>(result);
         } catch (BaseException exception) {
             return new BaseResponse<>(exception.getStatus());

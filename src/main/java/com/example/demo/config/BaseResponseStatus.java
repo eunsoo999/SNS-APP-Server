@@ -12,7 +12,7 @@ public enum BaseResponseStatus {
      */
     SUCCESS(true, 1000, "요청에 성공하였습니다."),
 
-
+    TEST_ERROR(false,1001,"오류발생"),
     /**
      * 2000 : Request 오류
      */
@@ -66,6 +66,7 @@ public enum BaseResponseStatus {
     // [DELETE] /follows
     FOLLOWS_NOT_EXISTS(false, 2200, "팔로우 상태가 아닙니다."),
 
+
     SEARCH_EMPTY_KEYWORD(false, 2300, "검색어를 입력해주세요."),
 
     /**
@@ -73,10 +74,17 @@ public enum BaseResponseStatus {
      */
     // Common
     RESPONSE_ERROR(false, 3000, "값을 불러오는데 실패하였습니다."),
+    PATCH_STATUS_FAIL(false,3001, "변경 실패하였습니다."),
 
     // [POST] /users
     DUPLICATED_EMAIL(false, 3013, "중복된 이메일입니다."),
     FAILED_TO_LOGIN(false,3014,"없는 아이디거나 비밀번호가 틀렸습니다."),
+
+    // [POST] /follows
+    DUPLICATED_FOLLOWS(false, 3050, "중복된 팔로우 신청입니다."),
+
+    POSTS_NOT_EXISTS(false, 3100, "존재하지않는 게시물입니다."),
+
 
     /**
      * 4000 : Database, Server 오류

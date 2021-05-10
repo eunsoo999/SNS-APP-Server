@@ -1,6 +1,7 @@
 package com.example.demo.src.post;
 
 import com.example.demo.config.BaseException;
+import com.example.demo.src.PostLike.model.GetPostLikes;
 import com.example.demo.src.post.model.GetPostsFeedRes;
 import com.example.demo.src.post.model.GetPostsRes;
 import com.example.demo.src.user.UserProvider;
@@ -11,8 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.example.demo.config.BaseResponseStatus.DATABASE_ERROR;
-import static com.example.demo.config.BaseResponseStatus.USERS_IDX_NOT_EXISTS;
+import static com.example.demo.config.BaseResponseStatus.*;
 
 @Service
 public class PostProvider {
@@ -65,5 +65,15 @@ public class PostProvider {
         return postDao.checkPostIdx(postIdx);
     }
 
-
+    public List<GetPostLikes> retrievePostLikedUsers(int postIdx, int loginIdx) throws BaseException {
+        if (checkPostIdx(postIdx) == 0) {
+            throw new BaseException(POSTS_NOT_EXISTS);
+        }
+        try {
+            List<GetPostLikes> getPostLikes = postDao.retrievePostLikedUsers(postIdx,loginIdx);
+            return getPostLikes;
+        } catch (Exception exception) {
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
 }

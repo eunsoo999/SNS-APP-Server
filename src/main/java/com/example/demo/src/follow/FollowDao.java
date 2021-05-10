@@ -33,9 +33,9 @@ public class FollowDao {
         return this.jdbcTemplate.queryForObject(lastInsertIdQuery, int.class);
     }
 
-    public void deleteFollow(int followIdx) {
+    public int deleteFollow(int followIdx) {
         String deleteFollowQuery = "UPDATE Follow set status = 'CANCEL' where idx = ?";
-        this.jdbcTemplate.update(deleteFollowQuery, followIdx);
+        return this.jdbcTemplate.update(deleteFollowQuery, followIdx);
     }
 
     public int checkFollowsIdx(int followIdx){
@@ -45,4 +45,10 @@ public class FollowDao {
 
     }
 
+    public int checkFollow(int loginIdx, int followingUserIdx) {
+        String checkFollowQuery = "select exists(select idx from Follow where userIdx = ? and followingUserIdx = ? and status != 'CANCEL')";
+
+        return this.jdbcTemplate.queryForObject(checkFollowQuery, int.class, loginIdx, followingUserIdx);
+
+    }
 }

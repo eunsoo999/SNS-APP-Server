@@ -2,6 +2,7 @@ package com.example.demo.src.post;
 
 import com.example.demo.config.BaseException;
 import com.example.demo.config.BaseResponse;
+import com.example.demo.src.PostLike.model.GetPostLikes;
 import com.example.demo.src.post.model.GetPostsFeedRes;
 import com.example.demo.src.post.model.PostPostReq;
 import com.example.demo.src.post.model.PostPostRes;
@@ -94,6 +95,24 @@ public class PostController {
             postService.deletePosts(postIdx);
             String result = "";
             return new BaseResponse<>(result);
+        } catch (BaseException exception) {
+            return new BaseResponse<>((exception.getStatus()));
+        }
+    }
+
+    /**
+     * 게시글 좋아요누른 유저 조회 API
+     * [GET] /posts/:postIdx/liked
+     *
+     */
+    @ResponseBody
+    @GetMapping("/{postIdx}/liked")
+    public BaseResponse<List<GetPostLikes>> getPostLikedUsers(@PathVariable("postIdx") int postIdx) {
+        int loginIdx = 1; //todo 로그인 유저 수정하기
+
+        try {
+            List<GetPostLikes> getPostLikes = postProvider.retrievePostLikedUsers(postIdx, loginIdx);
+            return new BaseResponse<>(getPostLikes);
         } catch (BaseException exception) {
             return new BaseResponse<>((exception.getStatus()));
         }

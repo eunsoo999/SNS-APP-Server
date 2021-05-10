@@ -1,6 +1,7 @@
 package com.example.demo.src.user;
 
 
+import com.example.demo.src.follow.model.Follow;
 import com.example.demo.src.user.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -45,9 +46,9 @@ public class UserDao {
                 );
     }
 
-    public GetUserRes getUser(String userId){
+    public GetUserRes getUser(int userIdx){
         String getUserQuery = "select idx as 'userIdx', userId, name, profileUrl, websiteUrl, introduction, " +
-                "(select FORMAT(count(*), '#,#') from Post where Post.userIdx = User.idx) AS postCount, " +
+                "(select FORMAT(count(*), '#,#') from Post where Post.userIdx = User.idx and Post.status != 'N') AS postCount, " +
                 "CASE WHEN (select count(*) from Follow where User.idx = Follow.followingUserIdx) = 0 " +
                 "THEN 0 " +
                 "WHEN (select count(*) from Follow where User.idx = Follow.followingUserIdx) >= 10000 " +
@@ -56,9 +57,9 @@ public class UserDao {
                 "END as followerCount, " +
                 "(select FORMAT(count(*), '#,#') from Follow where User.idx = Follow.userIdx) AS followingCount " +
                 "from User " +
-                "where User.userId = ?";
+                "where User.idx = ?";
 
-        String getUserParams = userId;
+        int getUserParams = userIdx;
 
         return this.jdbcTemplate.queryForObject(getUserQuery,
                 (rs, rowNum) -> new GetUserRes(
@@ -123,7 +124,7 @@ public class UserDao {
     }
 
     //특정 유저 팔로잉 List
-    public List<FollowUser> getFollowing(int loginIdx, int userIdx){
+    public List<FollowUser> getFollowing(int loginIdx, int userIdx) {
         String query = "select User.idx as 'userIdx', User.profileUrl as 'userProfileUrl', " +
                 "userId, User.name as 'name', " +
                 "CASE WHEN User.idx IN (select followingUserIdx from Follow where userIdx = ? and status = 'ACTIVE') " +
@@ -135,7 +136,8 @@ public class UserDao {
                 "ELSE '팔로우' " +
                 "END as followCheck " +
                 "from Follow inner join User on Follow.followingUserIdx = User.idx " +
-                "where Follow.userIdx = ? and Follow.status = 'ACTIVE' and User.status != 'N'";
+                "where Follow.userIdx = ? and Follow.status = 'ACTIVE' and User.status != 'N' " +
+                "order by FIELD(followCheck, '-', '팔로잉', '팔로우')";
 
         int getUserParams = userIdx;
 
@@ -161,7 +163,8 @@ public class UserDao {
                 "ELSE '팔로우' " +
                 "END as followCheck " +
                 "from Follow inner join User on Follow.userIdx = User.idx " +
-                "where followingUserIdx = ? and Follow.status = 'ACTIVE' and User.status != 'N'";
+                "where followingUserIdx = ? and Follow.status = 'ACTIVE' and User.status != 'N' " +
+                "order by FIELD(followCheck, '-', '팔로잉', '팔로우')";
 
         int getUserParams = userIdx;
 
@@ -299,5 +302,61 @@ public class UserDao {
                         rs.getString("email"),
                         rs.getString("phone")
                 ), getPwdParams);
+    }
+
+    //나의 유저 팔로잉 List
+    public List<FollowUser> getMyFollowing(int loginIdx, String sort) {
+        String query = "select User.idx as 'userIdx', User.profileUrl as 'userProfileUrl', " +
+                "userId, User.name as 'name', '팔로잉' as 'followCheck' " +
+                "from Follow inner join User on Follow.followingUserIdx = User.idx " +
+                "where Follow.userIdx = ? and Follow.status = 'ACTIVE'";
+
+        if (sort != null) {
+            if (sort.equalsIgnoreCase("followingdate_asc")) {
+                query += "ASC";
+            } else if (sort.equalsIgnoreCase("followingdate_desc")) {
+                query += "DESC";
+            }
+        }
+
+        int getUserParams = loginIdx;
+
+        return this.jdbcTemplate.query(query,
+                (rs,rowNum) -> new FollowUser(
+                        rs.getInt("userIdx"),
+                        rs.getString("userProfileUrl"),
+                        rs.getString("userId"),
+                        rs.getString("name"),
+                        rs.getString("followCheck")), getUserParams);
+    }
+
+    public List<GetRecommendUsersRes> getRecommendUsers(int loginIdx) {
+        String getRecommendUsers = "select DISTINCT User.idx as 'userIdx', User.profileUrl as 'userProfileUrl', " +
+                "userId, User.name as 'name', " +
+                "CASE WHEN (select count(*) from Follow where Follow.useridx IN (select Follow.followingUserIdx from Follow " +
+                "where Follow.userIdx = ? and Follow.status = 'ACTIVE') AND Follow.followingUserIdx = User.idx) = 1 " +
+                "THEN concat((select subUser.name from Follow inner join User subUser on Follow.userIdx = subUser.idx " +
+                "where Follow.followingUserIdx = User.idx and subUser.idx != ? ORDER BY RAND() limit 1), '님이 팔로우합니다') " +
+                "WHEN (select count(*) from Follow where Follow.useridx IN (select Follow.followingUserIdx from Follow " +
+                "where Follow.userIdx = ? and Follow.status = 'ACTIVE') AND Follow.followingUserIdx = User.idx) > 1 " +
+                "THEN concat((select subUser.name from Follow inner join User subUser on Follow.userIdx = subUser.idx " +
+                "where Follow.followingUserIdx = User.idx and subUser.idx != ? ORDER BY RAND() limit 1), '님 외 ' , (select count(*) - 1 from Follow where Follow.useridx IN (select Follow.followingUserIdx from Follow " +
+                "where Follow.userIdx = ? and Follow.status = 'ACTIVE') AND Follow.followingUserIdx = User.idx), '명이 팔로우합니다') " +
+                "END AS 'recommendFollowMessage', '팔로우' AS 'followCheck' from Follow inner join User on Follow.followingUserIdx = User.idx " +
+                "where Follow.userIdx IN " +
+                "(select Follow.followingUserIdx from Follow where Follow.userIdx = ? and Follow.status = 'ACTIVE') " +
+                "and User.idx NOT IN (select Follow.followingUserIdx from Follow where Follow.userIdx = ? and Follow.status = 'ACTIVE') " +
+                "and User.idx != ? GROUP BY User.idx";
+
+        Object[] recommendUsersParams = new Object[]{loginIdx, loginIdx, loginIdx, loginIdx, loginIdx, loginIdx, loginIdx, loginIdx};
+
+        return this.jdbcTemplate.query(getRecommendUsers,
+                (rs,rowNum) -> new GetRecommendUsersRes(
+                        rs.getInt("userIdx"),
+                        rs.getString("userProfileUrl"),
+                        rs.getString("userId"),
+                        rs.getString("name"),
+                        rs.getString("recommendFollowMessage"),
+                        rs.getString("followCheck")), recommendUsersParams);
     }
 }

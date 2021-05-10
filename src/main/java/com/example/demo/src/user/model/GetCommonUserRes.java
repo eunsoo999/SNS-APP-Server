@@ -10,10 +10,11 @@ import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
-public class GetFollowUserRes {
+public class GetCommonUserRes {
     private String CommonFollowCount;
     private String followerCount;
     private String followingCount;
-    private List<FollowUser> followUsers = new ArrayList<>();
+    private List<FollowUser> commonUsers = new ArrayList<>();
     private List<GetRecommendUsersRes> recommendUsers = new ArrayList<>();
+
 }
