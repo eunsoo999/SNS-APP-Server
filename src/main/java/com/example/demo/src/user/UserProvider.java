@@ -151,17 +151,28 @@ public class UserProvider {
     }
 
     public PostLoginRes logIn(PostLoginReq postLoginReq) throws BaseException{
-        UserInfo user = userDao.getPwd(postLoginReq);
+        // TODO: 유저의 status ex) 비활성화된 유저, 탈퇴한 유저 등을 관리해주고 있다면 해당 부분에 대한 validation 처리도 해주셔야합니다.
+        if (userDao.checkUserId(postLoginReq.getUserId()) == 0) {  //ID를 가진 활성 유저가 없다.
+            if (userDao.checkDeletedUser(postLoginReq.getUserId()) == 1) { //탈퇴한 회원이라면
+                throw new BaseException(USERS_DELETED);
+            } else {
+                // 활성유저도 아니고 탈퇴한 회원도 아니라면 로그인 X
+                throw new BaseException(FAILED_TO_LOGIN);
+            }
+        }
+
+        UserInfo user = userDao.getPwd(postLoginReq); //암호화된 PW를 DB에서 받아온다.
         String password;
         try {
-            password = new AES128(Secret.USER_INFO_PASSWORD_KEY).decrypt(user.getPassword());
+            password = new AES128(Secret.USER_INFO_PASSWORD_KEY).decrypt(user.getPassword()); //PW 복호화
         } catch (Exception ignored) {
             throw new BaseException(PASSWORD_DECRYPTION_ERROR);
         }
 
         if(postLoginReq.getPassword().equals(password)){
+            //클라이언트가 jwt를 디코딩해서 안에 페이로드값을 볼 수는 있지만 같이 보내주는게 편리하다.
             int userIdx = userDao.getPwd(postLoginReq).getUserIdx();
-            String jwt = jwtService.createJwt(userIdx);
+            String jwt = jwtService.createJwt(userIdx); //useridx를 이용해서 jwt 생성
             return new PostLoginRes(userIdx,jwt);
         }
         else{

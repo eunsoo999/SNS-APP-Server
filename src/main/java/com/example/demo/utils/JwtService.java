@@ -34,6 +34,9 @@ public class JwtService {
                 .signWith(SignatureAlgorithm.HS256, Secret.JWT_SECRET_KEY)
                 .compact();
     }
+    /*
+        개발 중에는 setExpiration 파기 기간을 길게 잡는게 좋다. 하지만 실제 운영시에는 바꿔줘야한다.
+     */
 
     /*
     Header에서 X-ACCESS-TOKEN 으로 JWT 추출

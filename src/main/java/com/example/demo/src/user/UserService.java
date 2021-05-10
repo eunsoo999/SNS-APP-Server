@@ -52,9 +52,7 @@ public class UserService {
         }
         try{
             int userIdx = userDao.createUserByEmail(postUserReq);
-            //jwt 발급.
-            String jwt = jwtService.createJwt(userIdx);
-            return new PostUserRes(jwt,userIdx);
+            return new PostUserRes(userIdx);
         } catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
         }
@@ -79,9 +77,7 @@ public class UserService {
         }
         try{
             int userIdx = userDao.createUserByPhone(postUserReq);
-            //jwt 발급.
-            String jwt = jwtService.createJwt(userIdx);
-            return new PostUserRes(jwt,userIdx);
+            return new PostUserRes(userIdx);
         } catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
         }

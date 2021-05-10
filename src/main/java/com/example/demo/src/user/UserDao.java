@@ -277,6 +277,15 @@ public class UserDao {
 
     }
 
+    public int checkDeletedUser(String userId) {
+        String checkDeletedUserQuery = "SELECT exists(SELECT idx FROM User " +
+                "WHERE User.userId = ? AND User.status = 'N')";
+        String checkDeletedUserParams = userId;
+
+        return this.jdbcTemplate.queryForObject(checkDeletedUserQuery, int.class, checkDeletedUserParams);
+    }
+
+
     public int checkUserIdx(int userIdx) {
         String checkUserIdxQuery = "select exists(select idx from User where idx = ? and status != 'N')";
         int checkUserIdxParams = userIdx;
@@ -284,14 +293,14 @@ public class UserDao {
     }
 
     public int modifyUserName(PatchUserReq patchUserReq){
-        String modifyUserNameQuery = "update UserInfo set userName = ? where userIdx = ? ";
+        String modifyUserNameQuery = "update User set name = ? where idx = ? ";
         Object[] modifyUserNameParams = new Object[]{patchUserReq.getUserName(), patchUserReq.getUserIdx()};
 
         return this.jdbcTemplate.update(modifyUserNameQuery,modifyUserNameParams);
     }
 
     public UserInfo getPwd(PostLoginReq postLoginReq){
-        String getPwdQuery = "select idx AS 'userIdx', userId, password, email, phone from User where userId = ?";
+        String getPwdQuery = "select idx AS 'userIdx', userId, password, email, phone from User where userId = ? and status != 'N'";
         String getPwdParams = postLoginReq.getUserId();
 
         return this.jdbcTemplate.queryForObject(getPwdQuery,
@@ -359,4 +368,5 @@ public class UserDao {
                         rs.getString("recommendFollowMessage"),
                         rs.getString("followCheck")), recommendUsersParams);
     }
+
 }

@@ -167,7 +167,6 @@ public class UserController {
                 return new BaseResponse<>(USERS_EMPTY_USER_PW);
             }
 
-            // TODO: 유저의 status ex) 비활성화된 유저, 탈퇴한 유저 등을 관리해주고 있다면 해당 부분에 대한 validation 처리도 해주셔야합니다.
             PostLoginRes postLoginRes = userProvider.logIn(postLoginReq);
             return new BaseResponse<>(postLoginRes);
         } catch (BaseException exception){
@@ -374,27 +373,30 @@ public class UserController {
      * 유저정보변경 API
      * [PATCH] /users/:userIdx
      * @return BaseResponse<String>
+     * - 유저 정보는 오직 자신만 변경이 가능하도록 해야한다.
+     * 만약 jwt탈취를 해서 실행할 수 있도록 하면 보안상 큰 문제!
+     * 이것에 대한 검증이 필요하다.
      */
-//    @ResponseBody
-//    @PatchMapping("/{userIdx}")
-//    public BaseResponse<String> modifyUserName(@PathVariable("userIdx") int userIdx, @RequestBody User user){
-//        try {
-//            //jwt에서 idx 추출.
-//            int userIdxByJwt = jwtService.getUserIdx();
-//            //userIdx와 접근한 유저가 같은지 확인
-//            if(userIdx != userIdxByJwt){
-//                return new BaseResponse<>(INVALID_USER_JWT);
-//            }
-//            //같다면 유저네임 변경
-//            PatchUserReq patchUserReq = new PatchUserReq(userIdx,user.getUserName());
-//            userService.modifyUserName(patchUserReq);
-//
-//            String result = "";
-//        return new BaseResponse<>(result);
-//        } catch (BaseException exception) {
-//            return new BaseResponse<>((exception.getStatus()));
-//        }
-//    }
+    @ResponseBody
+    @PatchMapping("/{userIdx}")
+    public BaseResponse<String> modifyUserName(@PathVariable("userIdx") int userIdx, @RequestBody User user){
+        try {
+            //jwt에서 idx 추출.
+            int userIdxByJwt = jwtService.getUserIdx();
+            //userIdx와 접근한 유저가 같은지 확인
+            if(userIdx != userIdxByJwt){
+                return new BaseResponse<>(INVALID_USER_JWT);
+            }
+            //같다면 유저네임 변경
+            PatchUserReq patchUserReq = new PatchUserReq(userIdx,user.getName());
+            userService.modifyUserName(patchUserReq);
+
+            String result = "";
+        return new BaseResponse<>(result);
+        } catch (BaseException exception) {
+            return new BaseResponse<>((exception.getStatus()));
+        }
+    }
 
 //    /**
 //     * 나의 팔로잉 조회 API
