@@ -16,5 +16,5 @@ import java.util.List;
 public class PostHighlightReq {
     private String thumbnailUrl;
     private String title;
-    private List<PostHighlightStoryReq> highlightStorys = new ArrayList<>();
+    private List<Integer> selectedStorys = new ArrayList<>();
 }

@@ -2,11 +2,16 @@ package com.example.demo.src.highlight;
 
 import com.example.demo.config.BaseException;
 import com.example.demo.config.BaseResponse;
+import com.example.demo.src.highlight.model.PatchHighlightReq;
+import com.example.demo.src.highlight.model.PatchHighlightRes;
 import com.example.demo.src.highlight.model.PostHighlightReq;
+import com.example.demo.src.highlight.model.PostHighlightRes;
 import com.example.demo.src.highlightStory.HighlightStoryProvider;
 import com.example.demo.src.highlightStory.HighlightStoryService;
 import com.example.demo.src.highlightStory.model.GetHighlightStoryRes;
 import com.example.demo.src.highlightStory.model.PostHighlightStoryReq;
+import com.example.demo.utils.JwtService;
+import io.jsonwebtoken.Jwt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +35,15 @@ public class HighlightController {
     private final HighlightStoryProvider highlightStoryProvider;
     @Autowired
     private final HighlightStoryService highlightStoryService;
+    @Autowired
+    private final JwtService jwtService;
 
-    public HighlightController(HighlightProvider highlightProvider, HighlightService highlightService, HighlightStoryProvider highlightStoryProvider, HighlightStoryService highlightStoryService) {
+    public HighlightController(HighlightProvider highlightProvider, HighlightService highlightService, HighlightStoryProvider highlightStoryProvider, HighlightStoryService highlightStoryService, JwtService jwtService) {
         this.highlightProvider = highlightProvider;
         this.highlightService = highlightService;
         this.highlightStoryProvider = highlightStoryProvider;
         this.highlightStoryService = highlightStoryService;
+        this.jwtService = jwtService;
     }
 
     /**
@@ -45,24 +53,20 @@ public class HighlightController {
      */
     @ResponseBody
     @PostMapping("")
-    public BaseResponse<String> postHighlights(@RequestBody PostHighlightReq postHighlightReq) {
+    public BaseResponse<PostHighlightRes> postHighlights(@RequestBody PostHighlightReq postHighlightReq) {
+        // 이미지 검증
         if (postHighlightReq.getThumbnailUrl() == null) {
             return new BaseResponse<>(POST_HIGHLIGHT_EMPTY_THUMBNAIL);
         }
-        if (postHighlightReq.getHighlightStorys().isEmpty()) {
+        //삽입할 스토리 검증
+        if (postHighlightReq.getSelectedStorys().isEmpty()) {
             return new BaseResponse<>(POST_HIGHLIGHT_EMPTY_STORY);
         }
-        int loginIdx = 1; //todo 로그인유저 수정
 
         try {
-            //폴더 생성
-            int savedHighlightIdx = highlightService.createHighlight(postHighlightReq, loginIdx);
-            //폴더를 생성하면서 선택한 스토리를 HighlightStory에 추가
-            for (PostHighlightStoryReq postHighlightStoryReq : postHighlightReq.getHighlightStorys()) {
-                postHighlightStoryReq.setHighlightIdx(savedHighlightIdx);
-                highlightStoryService.createHighlightStory(postHighlightStoryReq);
-            }
-            String result = "";
+            int userIdxByJwt = jwtService.getUserIdx();
+            int savedHighlightIdx = highlightService.createHighlight(postHighlightReq, userIdxByJwt);
+            PostHighlightRes result = new PostHighlightRes(savedHighlightIdx);
             return new BaseResponse<>(result);
         } catch (BaseException exception) {
             return new BaseResponse<>(exception.getStatus());
@@ -85,5 +89,35 @@ public class HighlightController {
         }
     }
 
-    //하이라이트 스토리 개수.
+    /**
+     * 하이라이트 폴더 수정 API
+     * [PATCH] /highlights/:highlightIdx
+     */
+    @ResponseBody
+    @PatchMapping("/{highlightIdx}")
+    public BaseResponse<String> patchHighlights(@PathVariable int highlightIdx, @RequestBody PatchHighlightReq patchHighlightReq) {
+        try {
+            int userIdxByJwt = jwtService.getUserIdx();
+            highlightService.updateHighlights(highlightIdx, patchHighlightReq, userIdxByJwt);
+            return new BaseResponse<>("");
+        } catch (BaseException exception) {
+            return new BaseResponse<>(exception.getStatus());
+        }
+    }
+
+    /**
+     * 하이라이트 폴더 삭제 API
+     * [PATCH] /highlights/:highlightIdx/status
+     */
+    @ResponseBody
+    @PatchMapping("/{highlightIdx}/status")
+    public BaseResponse<String> patchHighlightsStatus(@PathVariable int highlightIdx) {
+        try {
+            int userIdxByJwt = jwtService.getUserIdx();
+            int deletedHighlightIdx =  highlightService.updateHighlightsStatus(highlightIdx, userIdxByJwt);
+            return new BaseResponse<>("");
+        } catch (BaseException exception) {
+            return new BaseResponse<>(exception.getStatus());
+        }
+    }
 }

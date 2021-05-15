@@ -1,7 +1,6 @@
 package com.example.demo.src.user;
 
 
-import com.example.demo.src.follow.model.Follow;
 import com.example.demo.src.user.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -236,7 +235,7 @@ public class UserDao {
                 getUsersByEmailParams);
     }
 
-    public int createUserByEmail(PostUserReq postUserReq){
+    public int createUserByEmail(PostSignUpReq postUserReq){
         String createUserQuery = "INSERT INTO User (userId, password, email) VALUES (?, ?, ?)";
         Object[] createUserParams = new Object[]{postUserReq.getUserId(), postUserReq.getPassword(), postUserReq.getEmail()};
         this.jdbcTemplate.update(createUserQuery, createUserParams);
@@ -245,7 +244,7 @@ public class UserDao {
         return this.jdbcTemplate.queryForObject(lastInsertIdQuery,int.class);
     }
 
-    public int createUserByPhone(PostUserReq postUserReq){
+    public int createUserByPhone(PostSignUpReq postUserReq){
         String createUserQuery = "INSERT INTO User (userId, password, phone) VALUES (?, ?, ?)";
         Object[] createUserParams = new Object[]{postUserReq.getUserId(), postUserReq.getPassword(), postUserReq.getPhone()};
         this.jdbcTemplate.update(createUserQuery, createUserParams);
@@ -292,11 +291,11 @@ public class UserDao {
         return this.jdbcTemplate.queryForObject(checkUserIdxQuery, int.class, checkUserIdxParams);
     }
 
-    public int modifyUserName(PatchUserReq patchUserReq){
-        String modifyUserNameQuery = "update User set name = ? where idx = ? ";
-        Object[] modifyUserNameParams = new Object[]{patchUserReq.getUserName(), patchUserReq.getUserIdx()};
+    public int updateUserProfile(PatchUserReq patchUserReq, int userIdx){
+        String modifyUserQuery = "update User set name = ?, userId = ?, websiteUrl = ?, introduction = ? where idx = ? ";
+        Object[] modifyUserParams = new Object[]{patchUserReq.getUserName(), patchUserReq.getUserId(), patchUserReq.getWebsite(), patchUserReq.getIntroduction(), userIdx};
 
-        return this.jdbcTemplate.update(modifyUserNameQuery,modifyUserNameParams);
+        return this.jdbcTemplate.update(modifyUserQuery,modifyUserParams);
     }
 
     public UserInfo getPwd(PostLoginReq postLoginReq){
@@ -369,4 +368,8 @@ public class UserDao {
                         rs.getString("followCheck")), recommendUsersParams);
     }
 
+    public int updateUserStatus(int userIdx) {
+        String updateUserStatusQuery = "update User set status = 'N' where idx = ? ";
+        return this.jdbcTemplate.update(updateUserStatusQuery, userIdx);
+    }
 }

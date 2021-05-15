@@ -3,12 +3,17 @@ package com.example.demo.src.post;
 import com.example.demo.config.BaseException;
 import com.example.demo.config.BaseResponse;
 import com.example.demo.src.PostLike.model.GetPostLikes;
-import com.example.demo.src.post.model.GetPostsFeedRes;
-import com.example.demo.src.post.model.PostPostReq;
-import com.example.demo.src.post.model.PostPostRes;
+import com.example.demo.src.comment.CommentProvider;
+import com.example.demo.src.comment.model.GetCommentsRes;
+import com.example.demo.src.post.model.*;
 import com.example.demo.src.postImage.PostImageProvider;
 import com.example.demo.src.postImage.PostImageService;
 import com.example.demo.src.postImage.model.GetPostImagesRes;
+import com.example.demo.src.postImage.model.PostPostImageReq;
+import com.example.demo.src.story.StoryProvider;
+import com.example.demo.src.story.model.GetStorysRes;
+import com.example.demo.utils.JwtService;
+import com.example.demo.utils.ValidationRegex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.example.demo.config.BaseResponseStatus.POST_POSTS_EMPTY_IMAGE;
+import static com.example.demo.config.BaseResponseStatus.*;
 
 @RestController
 @RequestMapping("/posts")
@@ -28,15 +33,15 @@ public class PostController {
     @Autowired
     private final PostService postService;
     @Autowired
-    private final PostImageService postImageService;
+    private final JwtService jwtService;
     @Autowired
-    private final PostImageProvider postImageProvider;
+    private final CommentProvider commentProvider;
 
-    public PostController(PostProvider postProvider, PostService postService, PostImageService postImageService, PostImageProvider postImageProvider) {
+    public PostController(PostProvider postProvider, PostService postService, JwtService jwtService, CommentProvider commentProvider) {
         this.postProvider = postProvider;
         this.postService = postService;
-        this.postImageService = postImageService;
-        this.postImageProvider = postImageProvider;
+        this.jwtService = jwtService;
+        this.commentProvider = commentProvider;
     }
 
     /**
@@ -46,19 +51,13 @@ public class PostController {
      */
     @ResponseBody
     @GetMapping("")
-    public BaseResponse<List<GetPostsFeedRes>> getPosts() {
-        int loginIdx = 1; //todo 로그인 유저 수정하기
-
+    public BaseResponse<GetPostsMainFeedRes> getPosts() {
         try{
-            List<GetPostsFeedRes> getPostList = postProvider.getPosts(loginIdx);
-            for (GetPostsFeedRes getPostRes : getPostList) {
-                int postIdx = getPostRes.getPostIdx();
-                List<GetPostImagesRes> getPostImagesResList = postImageProvider.getPostImage(postIdx);
-                getPostRes.setPostImages(getPostImagesResList);
-            }
-            return new BaseResponse<>(getPostList);
+            int userIdxByJwt = jwtService.getUserIdx(); // idx 추출
+            GetPostsMainFeedRes result = postProvider.getPostsMainFeed(userIdxByJwt);
+            return new BaseResponse<>(result);
         } catch(BaseException exception){
-            return new BaseResponse<>((exception.getStatus()));
+            return new BaseResponse<>(exception.getStatus());
         }
     }
 
@@ -69,14 +68,16 @@ public class PostController {
      */
     @ResponseBody
     @PostMapping("")
-    public BaseResponse<PostPostRes> postPosts(@RequestBody PostPostReq postPostReq) {
-        if (postPostReq.getPostImage().isEmpty()) {
-            return new BaseResponse<>(POST_POSTS_EMPTY_IMAGE);
+    public BaseResponse<PostPostsRes> postPosts(@RequestBody PostPostsReq postPostReq) {
+        if (postPostReq.getPostImage().isEmpty()) { return new BaseResponse<>(POST_POSTS_EMPTY_IMAGE); }
+        for (PostPostImageReq postImageReq : postPostReq.getPostImage()) {
+            if (!ValidationRegex.isRegexImage(postImageReq.getImageUrl())) {
+                return new BaseResponse<>(INVALID_IMAGE_URL);
+            }
         }
-        int loginIdx = 3; //todo 로그인 유저 수정하기
-
         try {
-            PostPostRes postPostRes = postService.createPost(postPostReq, loginIdx);
+            int userIdxByJwt = jwtService.getUserIdx();
+            PostPostsRes postPostRes = postService.createPost(postPostReq, userIdxByJwt);
             return new BaseResponse<>(postPostRes);
         } catch (BaseException exception) {
             return new BaseResponse<>(exception.getStatus());
@@ -84,16 +85,35 @@ public class PostController {
     }
 
     /**
+     * 게시글 수정 API
+     * [PATCH] /posts/:postIdx
+     * @return BaseResponse<PatchPostsRes>
+     */
+    @ResponseBody
+    @PatchMapping("/{postIdx}")
+    public BaseResponse<PostPostsRes> postPosts(@RequestBody PatchPostsReq postPostReq, @PathVariable int postIdx) {
+        try {
+            int userIdxByJwt = jwtService.getUserIdx();
+            int updatedIdx = postService.updatePost(postPostReq, postIdx,userIdxByJwt);
+            return new BaseResponse<>(new PostPostsRes(updatedIdx));
+        } catch (BaseException exception) {
+            return new BaseResponse<>((exception.getStatus()));
+        }
+
+    }
+
+    /**
      * 게시글 삭제 API
-     * [DELETE] /posts/:postIdx
+     * [PATCH] /posts/:postIdx/status
      * @return BaseResponse<String>
      */
     @ResponseBody
-    @DeleteMapping("/{postIdx}")
-    public BaseResponse<String> deletePosts(@PathVariable("postIdx") int postIdx) {
+    @PatchMapping("/{postIdx}/status")
+    public BaseResponse<String> patchPostsStatus(@PathVariable("postIdx") int postIdx) {
         try {
-            postService.deletePosts(postIdx);
-            String result = "";
+            int userIdxByJwt = jwtService.getUserIdx();
+            postService.updatePostsStatus(postIdx, userIdxByJwt);
+            String result = ""; //todo 삭제 리턴값 고치기
             return new BaseResponse<>(result);
         } catch (BaseException exception) {
             return new BaseResponse<>((exception.getStatus()));
@@ -101,20 +121,34 @@ public class PostController {
     }
 
     /**
-     * 게시글 좋아요누른 유저 조회 API
+     * 게시글 좋아요누른 유저 조회(+검색) API
      * [GET] /posts/:postIdx/liked
-     *
      */
     @ResponseBody
-    @GetMapping("/{postIdx}/liked")
+    @GetMapping("/{postIdx}/liked/users")
     public BaseResponse<List<GetPostLikes>> getPostLikedUsers(@PathVariable("postIdx") int postIdx) {
-        int loginIdx = 1; //todo 로그인 유저 수정하기
-
         try {
+            int loginIdx = jwtService.getUserIdx();
             List<GetPostLikes> getPostLikes = postProvider.retrievePostLikedUsers(postIdx, loginIdx);
             return new BaseResponse<>(getPostLikes);
         } catch (BaseException exception) {
-            return new BaseResponse<>((exception.getStatus()));
+            return new BaseResponse<>(exception.getStatus());
+        }
+    }
+
+    /**
+     * 게시글 댓글 조회 API
+     * [GET] /posts/:postIdx/comments
+     */
+    @ResponseBody
+    @GetMapping("/{postIdx}/comments")
+    public BaseResponse<List<GetCommentsRes>> getComments(@PathVariable int postIdx) {
+        try {
+            int loginIdx = jwtService.getUserIdx();
+            List<GetCommentsRes> getCommentsRes = commentProvider.retrieveComments(postIdx, loginIdx);
+            return new BaseResponse<>(getCommentsRes);
+        } catch (BaseException exception) {
+            return new BaseResponse<>(exception.getStatus());
         }
     }
 }

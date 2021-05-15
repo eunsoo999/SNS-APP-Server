@@ -29,4 +29,19 @@ public class PlaceDao {
                         rs.getString("title"),
                         rs.getString("address")), searchParam);
     }
+
+    public List<GetSearchPlaceRes> getPlacesByLocation(double lat, double lon) {
+        String getPlacesByLocationQuery = "SELECT idx AS 'placeIdx', title, address, " +
+                "(6371*acos(cos(radians(?1))*cos(radians(latitude))*cos(radians(longitude) " +
+                "- radians(?2))+sin(radians(?1))*sin(radians(latitude)))) AS distance " +
+                "FROM Place HAVING " +
+                "distance <= 2 " +
+                "ORDER BY distance";
+
+        return this.jdbcTemplate.query(getPlacesByLocationQuery,
+                (rs,rowNum) -> new GetSearchPlaceRes(
+                        rs.getInt("placeIdx"),
+                        rs.getString("title"),
+                        rs.getString("address")), lat, lon, lat);
+    }
 }

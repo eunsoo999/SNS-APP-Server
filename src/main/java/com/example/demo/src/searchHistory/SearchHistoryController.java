@@ -4,6 +4,8 @@ import com.example.demo.config.BaseException;
 import com.example.demo.config.BaseResponse;
 import com.example.demo.src.searchHistory.model.GetSearchHistoryRes;
 import com.example.demo.src.searchHistory.model.PostSearchHistoryReq;
+import com.example.demo.src.searchHistory.model.PostSearchHistoryRes;
+import com.example.demo.utils.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,31 +23,33 @@ public class SearchHistoryController {
     private final SearchHistoryProvider searchHistoryProvider;
     @Autowired
     private final SearchHistoryService searchHistoryService;
+    @Autowired
+    private final JwtService jwtService;
 
-    public SearchHistoryController(SearchHistoryProvider searchHistoryProvider, SearchHistoryService searchHistoryService) {
+    public SearchHistoryController(SearchHistoryProvider searchHistoryProvider, SearchHistoryService searchHistoryService, JwtService jwtService) {
         this.searchHistoryProvider = searchHistoryProvider;
         this.searchHistoryService = searchHistoryService;
+        this.jwtService = jwtService;
     }
 
     /**
      * 최근 검색 기록 조회
-     * [GET] /search/history?type=hit || /search/history
+     * [GET] /search/history?type=hit
      * [GET] /search/history?type=user
      * [GET] /search/history?type=tag
      * [GET] /search/history?type=place
      */
     @ResponseBody
     @GetMapping()
-    public BaseResponse<List<GetSearchHistoryRes>> getSearchHistorys(@RequestParam(required = false) String type) {
+    public BaseResponse<List<GetSearchHistoryRes>> getSearchHistorys(@RequestParam String type) {
         if (!type.equalsIgnoreCase("USER")
                     && !type.equalsIgnoreCase("TAG")
-                    && !type.equalsIgnoreCase("PLACE")) {
+                    && !type.equalsIgnoreCase("PLACE") && !type.equalsIgnoreCase("HIT")) {
             return new BaseResponse<>(NOT_EXISTS_SEARCH_TYPE);
         }
 
-        int loginIdx = 1; //todo 로그인 유저 수정
-
         try {
+            int loginIdx = jwtService.getUserIdx();
             List<GetSearchHistoryRes> getSearchHistoryResList = searchHistoryProvider.getSearchHistorys(type, loginIdx);
             return new BaseResponse<>(getSearchHistoryResList);
         } catch(BaseException exception){
@@ -59,13 +63,11 @@ public class SearchHistoryController {
      */
     @ResponseBody
     @PostMapping("")
-    public BaseResponse<String> postSearchHistorys (@RequestBody PostSearchHistoryReq postSearchHistoryReq) {
-        int loginIdx = 1; //todo 로그인유저 수정
-
+    public BaseResponse<PostSearchHistoryRes> postSearchHistorys (@RequestBody PostSearchHistoryReq postSearchHistoryReq) {
         try {
-            searchHistoryService.createSearchHistory(postSearchHistoryReq, loginIdx);
-            String result = "";
-            return new BaseResponse<>(result);
+            int loginIdx = jwtService.getUserIdx();
+            int createdIdx = searchHistoryService.createSearchHistory(postSearchHistoryReq, loginIdx);
+            return new BaseResponse<>(new PostSearchHistoryRes(createdIdx));
         } catch(BaseException exception) {
             return new BaseResponse<>(exception.getStatus());
         }
@@ -88,18 +90,31 @@ public class SearchHistoryController {
     }
 
     /**
-     * 검색 기록 삭제
+     * 검색 기록 단건 삭제
      */
     @ResponseBody
-    @DeleteMapping("/{searchHistoryIdx}")
-    public BaseResponse<String> deleteSearchHistorys (@PathVariable int searchHistoryIdx) {
+    @PatchMapping("/{searchHistoryIdx}/status")
+    public BaseResponse<String> updateSearchHistorysStatus (@PathVariable int searchHistoryIdx) {
         try {
-            searchHistoryService.deleteSearchHistory(searchHistoryIdx);
+            searchHistoryService.updateSearchHistorysStatus(searchHistoryIdx);
             return new BaseResponse<>("");
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
         }
+    }
 
-
+    /**
+     * 검색 기록 전체 삭제
+     */
+    @ResponseBody
+    @PatchMapping("/status")
+    public BaseResponse<String> updateAllSearchHistorysStatus () {
+        try {
+            int loginIdx = jwtService.getUserIdx();
+            searchHistoryService.updateAllSearchHistorysStatus(loginIdx);
+            return new BaseResponse<>("");
+        } catch(BaseException exception){
+            return new BaseResponse<>((exception.getStatus()));
+        }
     }
 }

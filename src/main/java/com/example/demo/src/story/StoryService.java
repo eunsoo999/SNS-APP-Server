@@ -7,8 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static com.example.demo.config.BaseResponseStatus.DATABASE_ERROR;
-import static com.example.demo.config.BaseResponseStatus.DELETE_STORY_NOT_EXISTS;
+import static com.example.demo.config.BaseResponseStatus.*;
 
 @Service
 public class StoryService {
@@ -31,12 +30,15 @@ public class StoryService {
         }
     }
 
-    public void deleteStorys(int storyIdx) throws BaseException {
+    public void updateStoryStatus(int storyIdx, int loginIdx) throws BaseException {
         if (storyDao.checkStoryIdx(storyIdx) == 0) {
             throw new BaseException(DELETE_STORY_NOT_EXISTS);
         }
+        if (storyDao.checkStoryOwner(storyIdx, loginIdx) == 0) {
+            throw new BaseException(INVALID_USER_JWT);
+        }
         try {
-            storyDao.deleteStory(storyIdx);
+            storyDao.updateStoryStatus(storyIdx);
         } catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
         }

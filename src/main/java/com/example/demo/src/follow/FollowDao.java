@@ -49,6 +49,11 @@ public class FollowDao {
         String checkFollowQuery = "select exists(select idx from Follow where userIdx = ? and followingUserIdx = ? and status != 'CANCEL')";
 
         return this.jdbcTemplate.queryForObject(checkFollowQuery, int.class, loginIdx, followingUserIdx);
+    }
 
+    public int checkFollowingUser(int followIdx, int loginIdx) {
+        String checkFollowingUserQuery = "select exists(select idx from Follow where idx = ? and userIdx = ? and status != 'CANCEL')";
+
+        return this.jdbcTemplate.queryForObject(checkFollowingUserQuery, int.class, followIdx, loginIdx);
     }
 }

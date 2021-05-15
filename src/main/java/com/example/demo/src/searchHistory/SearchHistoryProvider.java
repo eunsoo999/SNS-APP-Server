@@ -34,6 +34,8 @@ public class SearchHistoryProvider {
                 getSearchHistoryResList = searchHistoryDao.getSearchHistorysOfTag(loginIdx);
             } else if (type.equalsIgnoreCase("PLACE")) {
                 getSearchHistoryResList = searchHistoryDao.getSearchHistorysOfPlace(loginIdx);
+            } else if (type.equalsIgnoreCase("HIT")) {
+                getSearchHistoryResList = searchHistoryDao.getSearchHistorys(loginIdx);
             } else {
                 throw new BaseException(NOT_EXISTS_SEARCH_TYPE);
             }
@@ -42,37 +44,6 @@ public class SearchHistoryProvider {
             throw new BaseException(DATABASE_ERROR);
         }
     }
-
-    private List<GetSearchHistoryRes> getSearchHistorysOfUser(int loginIdx) throws BaseException {
-        List<GetSearchHistoryRes> getSearchHistoryResList = new ArrayList<>();
-        try {
-            getSearchHistoryResList = searchHistoryDao.getSearchHistorysOfUser(loginIdx);
-            return getSearchHistoryResList;
-        } catch (Exception exception) {
-            throw new BaseException(DATABASE_ERROR);
-        }
-    }
-
-    private List<GetSearchHistoryRes> getSearchHistorysOfTag(int loginIdx) throws BaseException {
-        List<GetSearchHistoryRes> getSearchHistoryResList = new ArrayList<>();
-        try {
-            getSearchHistoryResList = searchHistoryDao.getSearchHistorysOfTag(loginIdx);
-            return getSearchHistoryResList;
-        } catch (Exception exception) {
-            throw new BaseException(DATABASE_ERROR);
-        }
-    }
-
-    private List<GetSearchHistoryRes> getSearchHistorysOfPlace(int loginIdx) throws BaseException {
-        List<GetSearchHistoryRes> getSearchHistoryResList = new ArrayList<>();
-        try {
-            getSearchHistoryResList = searchHistoryDao.getSearchHistorysOfPlace(loginIdx);
-            return getSearchHistoryResList;
-        } catch (Exception exception) {
-            throw new BaseException(DATABASE_ERROR);
-        }
-    }
-
 
     public int checkSearchHistoryIdx(int searchHistoryIdx) {
         return searchHistoryDao.checkSearchHistoryIdx(searchHistoryIdx);

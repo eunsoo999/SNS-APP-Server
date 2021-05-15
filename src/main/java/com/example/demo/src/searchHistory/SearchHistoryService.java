@@ -44,13 +44,23 @@ public class SearchHistoryService {
         }
     }
 
-    public void deleteSearchHistory(int searchHistoryIdx) throws BaseException {
+    public void updateSearchHistorysStatus(int searchHistoryIdx) throws BaseException {
+        // 검색기록이 존재하는지
         if (searchHistoryProvider.checkSearchHistoryIdx(searchHistoryIdx) == 0) {
             throw new BaseException(DELETE_SEARCH_HISTORY_NOT_EXISTS);
         }
+        //todo 회원이 검색한 기록인지
 
         try {
-            searchHistoryDao.deleteSearchHistory(searchHistoryIdx);
+            searchHistoryDao.updateSearchHistorysStatus(searchHistoryIdx);
+        } catch (Exception exception) {
+            throw new BaseException(DATABASE_ERROR);
+        }
+    }
+
+    public void updateAllSearchHistorysStatus(int loginIdx) throws BaseException {
+        try {
+            searchHistoryDao.updateAllSearchHistorysStatusByUserIdx(loginIdx);
         } catch (Exception exception) {
             throw new BaseException(DATABASE_ERROR);
         }

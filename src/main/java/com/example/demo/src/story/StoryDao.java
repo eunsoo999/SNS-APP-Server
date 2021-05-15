@@ -35,7 +35,6 @@ public class StoryDao {
         return this.jdbcTemplate.query(getFollowUserStorysQuery,
                 (rs, rowNum) -> new GetStorysRes(
                         rs.getInt("idx"),
-                        rs.getInt("userIdx"),
                         rs.getString("userId"),
                         rs.getString("profileUrl")), getUserParams);
     }
@@ -82,14 +81,20 @@ public class StoryDao {
         return this.jdbcTemplate.queryForObject(lastInsertIdQuery,int.class); //todo 동시에..?
     }
 
-    public void deleteStory(int storyIdx) {
-        String deleteStoryQuery = "UPDATE Story set status = 'N' where idx = ?";
-        this.jdbcTemplate.update(deleteStoryQuery, storyIdx);
+    public void updateStoryStatus(int storyIdx) {
+        String updateStoryQuery = "UPDATE Story set status = 'N' where idx = ?";
+        this.jdbcTemplate.update(updateStoryQuery, storyIdx);
     }
 
     public int checkStoryIdx(int storyIdx) {
         String checkStoryIdxQuery = "select exists(select idx from Story where idx = ? and status != 'N')";
         int checkStoryIdxParams = storyIdx;
         return this.jdbcTemplate.queryForObject(checkStoryIdxQuery, int.class, checkStoryIdxParams);
+    }
+
+    public int checkStoryOwner(int storyIdx, int loginIdx) {
+        String checkStoryIdxQuery = "select exists(select idx from Story where idx = ? and userIdx = ? and status != 'N')";
+        return this.jdbcTemplate.queryForObject(checkStoryIdxQuery, int.class, storyIdx, loginIdx);
+
     }
 }

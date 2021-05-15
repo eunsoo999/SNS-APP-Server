@@ -9,7 +9,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class GetStorysRes {
     private int idx;
-    private int userIdx;
     private String userId;
     private String profileUrl;
 }

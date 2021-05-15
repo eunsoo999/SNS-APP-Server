@@ -1,7 +1,9 @@
 package com.example.demo.src.searchHistory;
 
+import com.example.demo.src.place.model.Place;
 import com.example.demo.src.searchHistory.model.GetSearchHistoryRes;
 import com.example.demo.src.searchHistory.model.PostSearchHistoryReq;
+import com.example.demo.src.searchHistory.model.SearchHistory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -48,9 +50,9 @@ public class SearchHistoryDao {
                 "ORDER BY SearchHistory.updatedAt DESC";
 
         return this.jdbcTemplate.query(getSearchHistoryQuery, (rs, rowNum) -> new GetSearchHistoryRes(
-                rs.getInt("searchHistoryIdx"),
+                //rs.getInt("searchHistoryIdx"),
                 rs.getString("searchType"),
-                rs.getInt("targetIdx"),
+                //rs.getInt("targetIdx"),
                 rs.getString("imageUrl"),
                 rs.getString("mainTitle"),
                 rs.getString("subTitle")), loginIdx);
@@ -70,7 +72,7 @@ public class SearchHistoryDao {
                 "THEN '500+' " +
                 "WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') < 10000 " +
                 "THEN '1000+' " +
-                "WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') <= 10000 " +
+                "WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') >= 10000 " +
                 "THEN (SELECT TRUNCATE(count(*) / 10000, 1) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') " +
                 "END AS subTitle " +
                 "FROM SearchHistory INNER JOIN Tag ON SearchHistory.targetIdx = Tag.idx " +
@@ -78,9 +80,9 @@ public class SearchHistoryDao {
                 "ORDER BY SearchHistory.updatedAt DESC";
 
         return this.jdbcTemplate.query(getSearchHistoryQuery, (rs, rowNum) -> new GetSearchHistoryRes(
-                rs.getInt("searchHistoryIdx"),
+                //rs.getInt("searchHistoryIdx"),
                 rs.getString("searchType"),
-                rs.getInt("targetIdx"),
+                //rs.getInt("targetIdx"),
                 rs.getString("imageUrl"),
                 rs.getString("mainTitle"),
                 rs.getString("subTitle")), loginIdx);
@@ -99,45 +101,63 @@ public class SearchHistoryDao {
                 "WHERE SearchHistory.searchType = 'PLACE' AND SearchHistory.userIdx = ? AND SearchHistory.status = 'Y'";
 
         return this.jdbcTemplate.query(getSearchHistoryPlaceQuery, (rs, rowNum) -> new GetSearchHistoryRes(
-                rs.getInt("searchHistoryIdx"),
+               // rs.getInt("searchHistoryIdx"),
                 rs.getString("searchType"),
-                rs.getInt("targetIdx"),
+                //rs.getInt("targetIdx"),
                 rs.getString("imageUrl"),
                 rs.getString("mainTitle"),
                 rs.getString("subTitle")), loginIdx);
     }
 
-    //(인기) 최근검색어
+    //(인기) 전체 검색어
     public List<GetSearchHistoryRes> getSearchHistorys(int loginIdx) {
-        String getSearchHistoryPlaceQuery = "SELECT SearchHistory.idx AS 'searchHistoryIdx', " +
-                "SearchHistory.searchType, " +
-                "SearchHistory.targetIdx, " +
-                "null AS 'imageUrl', " +
-                "Place.title AS 'mainTitle', " +
-                "null AS 'imageUrl', " +
-                "Place.address AS 'subTitle' " +
-                "FROM SearchHistory INNER JOIN Place ON SearchHistory.targetIdx = Place.idx " +
-                "WHERE SearchHistory.userIdx = ? AND SearchHistory.status = 'Y' " +
-                "ORDER BY SearchHistory.updatedAt DESC";
+        String getSearchHistoryPlaceQuery = "(SELECT SearchHistory.idx AS 'searchHistoryIdx', SearchHistory.searchType, SearchHistory.targetIdx, " +
+                "NULL as 'imageUrl', Tag.tagName AS 'mainTitle', " +
+                "CASE WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') < 100 " +
+                "THEN '100개 미만' " +
+                "WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') < 500 " +
+                "THEN '100+' " +
+                "WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') < 1000 " +
+                "THEN '500+' " +
+                "WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') < 10000 " +
+                "THEN '1000+' " +
+                "WHEN (SELECT count(*) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') >= 10000 " +
+                "THEN (SELECT TRUNCATE(count(*) / 10000, 1) FROM PostTag JOIN Post ON Post.idx = PostTag.postIdx WHERE PostTag.tagIdx = SearchHistory.targetIdx AND PostTag.status = 'Y') " +
+                "END AS subTitle, SearchHistory.updatedAt FROM SearchHistory INNER JOIN Tag ON SearchHistory.targetIdx = Tag.idx " +
+                "WHERE SearchHistory.searchType = 'TAG' AND SearchHistory.userIdx = ? AND SearchHistory.status = 'Y') " +
+                "UNION (SELECT SearchHistory.idx AS 'searchHistoryIdx', " +
+                "SearchHistory.searchType, SearchHistory.targetIdx, User.profileUrl AS 'imageUrl', User.userId AS 'mainTitle', User.name AS 'subTitle', SearchHistory.updatedAt " +
+                "FROM SearchHistory INNER JOIN User ON SearchHistory.targetIdx = User.idx " +
+                "WHERE SearchHistory.searchType = 'user' AND SearchHistory.userIdx = ? AND User.status != 'N' AND SearchHistory.status = 'Y') " +
+                "UNION SELECT SearchHistory.idx AS 'searchHistoryIdx', SearchHistory.searchType, SearchHistory.targetIdx, null AS 'imageUrl', " +
+                "Place.title AS 'mainTitle', Place.address AS 'subTitle', SearchHistory.updatedAt " +
+                "FROM SearchHistory INNER JOIN Place On SearchHistory.targetIdx = Place.idx " +
+                "WHERE SearchHistory.searchType = 'PLACE' AND SearchHistory.userIdx = ? AND SearchHistory.status = 'Y' " +
+                "ORDER BY updatedAt DESC";
 
         return this.jdbcTemplate.query(getSearchHistoryPlaceQuery, (rs, rowNum) -> new GetSearchHistoryRes(
-                rs.getInt("searchHistoryIdx"),
+                //rs.getInt("searchHistoryIdx"),
                 rs.getString("searchType"),
-                rs.getInt("targetIdx"),
+                //rs.getInt("targetIdx"),
                 rs.getString("imageUrl"),
                 rs.getString("mainTitle"),
-                rs.getString("subTitle")), loginIdx);
+                rs.getString("subTitle")), loginIdx, loginIdx,loginIdx);
     }
 
 
-    public int deleteSearchHistory(int searchHistoryIdx) {
-        String deleteSearchHistoryQuery = "UPDATE SearchHistory SET status = 'N' WHERE idx = ? ";
-        return this.jdbcTemplate.update(deleteSearchHistoryQuery, searchHistoryIdx);
+    public int updateSearchHistorysStatus(int searchHistoryIdx) {
+        String updateSearchHistoryQuery = "UPDATE SearchHistory SET status = 'N' WHERE idx = ? ";
+        return this.jdbcTemplate.update(updateSearchHistoryQuery, searchHistoryIdx);
     }
 
     public int checkSearchHistoryIdx(int searchHistoryIdx) {
         String checkSearchHistoryIdxQuery = "select exists(select idx from SearchHistory where idx = ? and status != 'N')";
         int searchHistoryIdxParams = searchHistoryIdx;
         return this.jdbcTemplate.queryForObject(checkSearchHistoryIdxQuery, int.class, searchHistoryIdxParams);
+    }
+
+    public int updateAllSearchHistorysStatusByUserIdx(int loginIdx) {
+        String updateSearchHistoryQuery = "UPDATE SearchHistory SET status = 'N' WHERE userIdx = ? ";
+        return this.jdbcTemplate.update(updateSearchHistoryQuery, loginIdx);
     }
 }

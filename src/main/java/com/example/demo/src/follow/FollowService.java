@@ -9,9 +9,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+
 import static com.example.demo.config.BaseResponseStatus.*;
 
 @Service
+@Transactional(rollbackOn = BaseException.class)
 public class FollowService {
     final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -46,9 +49,14 @@ public class FollowService {
         }
     }
 
-    public void deleteFollow(int followIdx) throws BaseException {
+    public void deleteFollow(int followIdx, int loginIdx) throws BaseException {
+        //존재하는 팔로우 상태인지
         if (followDao.checkFollowsIdx(followIdx) == 0) {
             throw new BaseException(FOLLOWS_NOT_EXISTS);
+        }
+        //팔로우 신청자가 로그인한 유저가 맞는지 검증
+        if (followDao.checkFollowingUser(followIdx, loginIdx) == 0) {
+            throw new BaseException(INVALID_USER_JWT);
         }
         try {
             int deletedCount = followDao.deleteFollow(followIdx);

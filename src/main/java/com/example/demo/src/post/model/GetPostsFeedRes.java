@@ -19,13 +19,13 @@ public class GetPostsFeedRes {
     private String userProfileUrl;
     private int postImgCount;
     private int postLikeCount;
+    private boolean likeCheck;
     private String postContents;
     private String commentCount;
     private String postTimeStamp;
-    //private GetPosts postInfo;
     private List<GetPostImagesRes> postImages = new ArrayList<>();
 
-    public GetPostsFeedRes(int postIdx, int userIdx, String placeTitle, String userId, String userProfileUrl, int postImgCount, int postLikeCount, String postContents, String commentCount, String postTimeStamp) {
+    public GetPostsFeedRes(int postIdx, int userIdx, String placeTitle, String userId, String userProfileUrl, int postImgCount, int postLikeCount, boolean likeCheck, String postContents, String commentCount, String postTimeStamp) {
         this.postIdx = postIdx;
         this.userIdx = userIdx;
         this.placeTitle = placeTitle;
@@ -33,6 +33,7 @@ public class GetPostsFeedRes {
         this.userProfileUrl = userProfileUrl;
         this.postImgCount = postImgCount;
         this.postLikeCount = postLikeCount;
+        this.likeCheck = likeCheck;
         this.postContents = postContents;
         this.commentCount = commentCount;
         this.postTimeStamp = postTimeStamp;

@@ -4,6 +4,7 @@ import com.example.demo.config.BaseException;
 import com.example.demo.config.BaseResponse;
 import com.example.demo.src.follow.model.PostFollowReq;
 import com.example.demo.src.follow.model.PostFollowRes;
+import com.example.demo.utils.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,13 @@ public class FollowController {
     private final FollowService followService;
     @Autowired
     private final FollowProvider followProvider;
+    @Autowired
+    private final JwtService jwtService;
 
-    public FollowController(FollowService followService, FollowProvider followProvider){
+    public FollowController(FollowService followService, FollowProvider followProvider, JwtService jwtService){
         this.followService = followService;
         this.followProvider = followProvider;
+        this.jwtService = jwtService;
     }
 
     /**
@@ -34,14 +38,15 @@ public class FollowController {
     @ResponseBody
     @PostMapping("")
     public BaseResponse<PostFollowRes> postFollows(@RequestBody PostFollowReq postFollowReq) {
+        //계정 공개 상태 Request 검증
         if (!postFollowReq.getFollowingUserStatus().equals("PUBLIC")
                 && !postFollowReq.getFollowingUserStatus().equals("PRIVATE")) {
             return new BaseResponse<>(INVALID_USERS_STATUS);
         }
 
-        int loginIdx = 1; //todo 로그인 유저 수정
         try{
-            PostFollowRes postFollowRes = followService.createFollow(postFollowReq, loginIdx);
+            int userIdxByJwt = jwtService.getUserIdx();
+            PostFollowRes postFollowRes = followService.createFollow(postFollowReq, userIdxByJwt);
             return new BaseResponse<>(postFollowRes);
         }
         catch (BaseException exception){
@@ -57,7 +62,8 @@ public class FollowController {
     @PatchMapping("/{followIdx}/status")
     public BaseResponse<String> deleteFollow(@PathVariable int followIdx) {
         try {
-            followService.deleteFollow(followIdx);
+            int userIdxByJwt = jwtService.getUserIdx();
+            followService.deleteFollow(followIdx, userIdxByJwt);
             String result = "정상적으로 취소되었습니다.";
             return new BaseResponse<>(result);
         } catch (BaseException exception) {

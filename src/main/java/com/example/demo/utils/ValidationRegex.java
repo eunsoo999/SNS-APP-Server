@@ -24,6 +24,20 @@ public class ValidationRegex {
         Matcher matcher = pattern.matcher(target);
         return matcher.find();
     }
+
+    public static boolean isRegexSpecial(String target) {
+        String regex = "[-_.,\\[\\]~!@#$%^&*(()+|<>?:\\;{}`'=\\\\]";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(target);
+        return matcher.find();
+    }
+
+    public static boolean isRegexImage(String target) {
+        String regex = "(http(s)?:\\/\\/(www\\.)?hellosilver\\.shop)(\\/)(.*)(?:jpg|gif|png|mp4|avi)";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(target);
+        return matcher.find();
+    }
 }
 
 

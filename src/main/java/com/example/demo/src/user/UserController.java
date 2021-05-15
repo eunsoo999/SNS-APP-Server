@@ -8,9 +8,7 @@ import com.example.demo.src.post.PostProvider;
 import com.example.demo.src.post.model.GetPostsFeedRes;
 import com.example.demo.src.post.model.GetPostsRes;
 import com.example.demo.src.postImage.PostImageProvider;
-import com.example.demo.src.postImage.model.GetPostImagesRes;
 import com.example.demo.src.story.StoryProvider;
-import com.example.demo.src.story.model.GetStorysRes;
 import com.example.demo.src.story.model.GetUserStorysRes;
 import com.example.demo.src.user.model.*;
 import com.example.demo.utils.JwtService;
@@ -107,7 +105,7 @@ public class UserController {
      */
     @ResponseBody
     @PostMapping("")
-    public BaseResponse<PostUserRes> createUser(@RequestBody PostUserReq postUserReq) {
+    public BaseResponse<PostSignUpRes> createUser(@RequestBody PostSignUpReq postUserReq) {
         //입력 확인
         if(postUserReq.getUserId() == null){
             return new BaseResponse<>(POST_USERS_EMPTY_ID);
@@ -139,7 +137,7 @@ public class UserController {
         }
 
         try{
-            PostUserRes postUserRes;
+            PostSignUpRes postUserRes;
             if (postUserReq.getEmail() != null) {
                 postUserRes = userService.createUserByEmail(postUserReq);
             } else {
@@ -184,8 +182,8 @@ public class UserController {
     public BaseResponse<GetUsersProfileRes> getUser(@PathVariable("userIdx") int userIdx) {
         try{
             GetUserRes getUserRes = userProvider.getUser(userIdx); //유저의 프로필 조회
-            List<GetPostsRes> getPostsResList = postProvider.getPostsByUserIdx(userIdx); //유저의 게시물조회
             List<GetHighlightRes> getHighlightResList = highlightProvider.getHighlights(userIdx); // 유저의 하이라이트 폴더 조회
+            List<GetPostsRes> getPostsResList = postProvider.getPostsByUserIdx(userIdx); //유저의 게시물조회
             return new BaseResponse<>(new GetUsersProfileRes(getUserRes, getHighlightResList, getPostsResList));
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
@@ -218,10 +216,9 @@ public class UserController {
     @ResponseBody
     @GetMapping("/recommend") // (GET) 127.0.0.1:9000/users/:userIdx/following
     public BaseResponse<List<GetRecommendUsersRes>> getRecommendUsers() {
-        int loginIdx = 1; //todo 로그인 유저 수정
-
         try{
-            List<GetRecommendUsersRes> result = userProvider.retrieveRecommendUsers(loginIdx);
+            int userIdxByJwt = jwtService.getUserIdx();
+            List<GetRecommendUsersRes> result = userProvider.retrieveRecommendUsers(userIdxByJwt);
             return new BaseResponse<>(result);
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
@@ -237,9 +234,8 @@ public class UserController {
     @ResponseBody
     @GetMapping("/{userIdx}/following") // (GET) 127.0.0.1:9000/users/:userIdx/following
     public BaseResponse<GetFollowUserRes> getFollowingUser(@PathVariable("userIdx") int userIdx) {
-        int loginIdx = 1; //todo 로그인 유저 수정
-
         try{
+            int loginIdx = jwtService.getUserIdx();
             List<FollowUser> getUserRes = userProvider.retrieveFollowingList(loginIdx, userIdx);
             List<GetRecommendUsersRes> getRecommendUsersList = userProvider.retrieveRecommendUsers(loginIdx);
 
@@ -261,15 +257,9 @@ public class UserController {
     @ResponseBody
     @GetMapping("/{userIdx}/follower") // (GET) 127.0.0.1:9000/app/users/:userIdx
     public BaseResponse<GetFollowUserRes> getFollowerUser(@PathVariable("userIdx") int userIdx) {
-        int loginIdx = 1; //로그인 유저idx
-        //todo 로그인 유저 수정
         try{
-            List<FollowUser> getUserRes = userProvider.retrieveFollowerList(loginIdx, userIdx);
-            List<GetRecommendUsersRes> getRecommendUsersList = userProvider.retrieveRecommendUsers(loginIdx);
-            String commonFollowCount = userProvider.getCommonFollowCount(loginIdx, userIdx);
-            String followerCount = userProvider.getFollowerCount(userIdx);
-            String followingCount = userProvider.getFollowingCount(userIdx);
-            GetFollowUserRes result = new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes, getRecommendUsersList);
+            int loginIdx = jwtService.getUserIdx();
+            GetFollowUserRes result = userProvider.getFollowerUser(userIdx, loginIdx);
             return new BaseResponse<>(result);
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
@@ -284,9 +274,8 @@ public class UserController {
     @ResponseBody
     @GetMapping("/{userIdx}/common") // (GET) 127.0.0.1:9000/users/:userIdx/common
     public BaseResponse<GetCommonUserRes> getCommonUser(@PathVariable("userIdx") int userIdx) {
-        int loginIdx = 1; //로그인 유저idx
-        //todo 로그인 유저 수정
         try{
+            int loginIdx = jwtService.getUserIdx();
             List<FollowUser> getUserRes = userProvider.retrieveCommonList(loginIdx, userIdx);
             List<GetRecommendUsersRes> getRecommendUsersList = userProvider.retrieveRecommendUsers(loginIdx);
             String commonFollowCount = userProvider.getCommonFollowCount(loginIdx, userIdx);
@@ -308,33 +297,19 @@ public class UserController {
     @GetMapping("/{userIdx}/posts/feed")
     public BaseResponse<List<GetPostsFeedRes>> getUsersPostsFeed(@PathVariable int userIdx) {
         try {
-            List<GetPostsFeedRes> getPostList = postProvider.getPostsFeedByUserIdx(userIdx);
-            for (GetPostsFeedRes getPostRes : getPostList) {
-                int postIdx = getPostRes.getPostIdx();
-                List<GetPostImagesRes> getPostImagesResList = postImageProvider.getPostImage(postIdx);
-                getPostRes.setPostImages(getPostImagesResList);
-            }
+            int loginIdx = jwtService.getUserIdx();
+            List<GetPostsFeedRes> getPostList = postProvider.getPostsFeedByUserIdx(userIdx, loginIdx);
             return new BaseResponse<>(getPostList);
         } catch (BaseException exception) {
             return new BaseResponse<>((exception.getStatus()));
         }
+        //            List<GetPostsFeedRes> getPostList = postProvider.getPostsFeedByUserIdx(userIdx);
+//            for (GetPostsFeedRes getPostRes : getPostList) {
+//                int postIdx = getPostRes.getPostIdx();
+//                List<GetPostImagesRes> getPostImagesResList = postImageProvider.getPostImage(postIdx);
+//                getPostRes.setPostImages(getPostImagesResList);
+//            }
     }
-
-//    /**
-//     * 특정 유저의 게시글 미리보기 API
-//     * [GET] /users/:userIdx/posts
-//     * @return BaseResponse<List<GetPostRes>>
-//     */
-//    @ResponseBody
-//    @GetMapping("/{userIdx}/posts")
-//    public BaseResponse<List<GetPostsRes>> getUsersPosts(@PathVariable int userIdx) {
-//        try {
-//            List<GetPostsRes> getPostList = postProvider.getPostsByUserIdx(userIdx);
-//            return new BaseResponse<>(getPostList);
-//        } catch (BaseException exception) {
-//            return new BaseResponse<>((exception.getStatus()));
-//        }
-//    }
 
     /**
      * 특정 유저의 스토리 조회 API
@@ -370,7 +345,7 @@ public class UserController {
 //    }
 
     /**
-     * 유저정보변경 API
+     * 유저프로필 변경 API
      * [PATCH] /users/:userIdx
      * @return BaseResponse<String>
      * - 유저 정보는 오직 자신만 변경이 가능하도록 해야한다.
@@ -379,7 +354,7 @@ public class UserController {
      */
     @ResponseBody
     @PatchMapping("/{userIdx}")
-    public BaseResponse<String> modifyUserName(@PathVariable("userIdx") int userIdx, @RequestBody User user){
+    public BaseResponse<String> modifyUserProfile(@PathVariable("userIdx") int userIdx, @RequestBody PatchUserReq patchUserReq){
         try {
             //jwt에서 idx 추출.
             int userIdxByJwt = jwtService.getUserIdx();
@@ -387,12 +362,34 @@ public class UserController {
             if(userIdx != userIdxByJwt){
                 return new BaseResponse<>(INVALID_USER_JWT);
             }
-            //같다면 유저네임 변경
-            PatchUserReq patchUserReq = new PatchUserReq(userIdx,user.getName());
-            userService.modifyUserName(patchUserReq);
+            //같다면 정보 수정
+            userService.updateUserProfile(patchUserReq, userIdx);
 
             String result = "";
         return new BaseResponse<>(result);
+        } catch (BaseException exception) {
+            return new BaseResponse<>((exception.getStatus()));
+        }
+    }
+    /**
+     * 유저 탈퇴 API
+     * [PATCH] /users/:userIdx/status
+     * @return BaseResponse<String>
+     */
+    @ResponseBody
+    @PatchMapping("/{userIdx}/status")
+    public BaseResponse<String> updateUserStatus(@PathVariable("userIdx") int userIdx){
+        try {
+            //jwt에서 idx 추출.
+            int userIdxByJwt = jwtService.getUserIdx();
+            //userIdx와 접근한 유저가 같은지 확인
+            if(userIdx != userIdxByJwt){
+                return new BaseResponse<>(INVALID_USER_JWT);
+            }
+            userService.updateUserStatus(userIdx);
+
+            String result = "";
+            return new BaseResponse<>(result);
         } catch (BaseException exception) {
             return new BaseResponse<>((exception.getStatus()));
         }

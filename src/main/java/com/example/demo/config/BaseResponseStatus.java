@@ -48,6 +48,7 @@ public enum BaseResponseStatus {
     // [POST] /posts
     POST_POSTS_EMPTY_IMAGE(false, 2030, "사진이나 동영상을 업로드해주세요."),
     DELETE_POSTS_NOT_EXISTS(false, 2031, "존재하지않는 게시물입니다."),
+    INVALID_IMAGE_URL(false, 2032, "이미지 URL 형식을 확인해주세요."),
 
     // [PATCH] /posts
     PATCH_POSTS_NOT_EXISTS(false, 2040, "존재하지않는 게시물입니다."),
@@ -86,6 +87,12 @@ public enum BaseResponseStatus {
 
     POSTS_NOT_EXISTS(false, 3100, "존재하지않는 게시물입니다."),
 
+    TAGS_NOT_EXISTS(false, 3150, "존재하지않는 태그입니다."),
+
+    COMMENTS_NOT_EXISTS(false, 3160, "존재하지않는 댓글입니다."),
+    POST_COMMENTS_NOT_EXISTS(false, 3200, "답글을 달 수 없습니다."),
+    ROOMS_NOT_EXISTS(false, 3210, "존재하지않는 채팅방입니다."),
+
 
     /**
      * 4000 : Database, Server 오류
@@ -95,6 +102,7 @@ public enum BaseResponseStatus {
 
     //[PATCH] /users/{userIdx}
     MODIFY_FAIL_USERNAME(false,4014,"유저네임 수정 실패"),
+    MODIFY_FAIL_HIGHLIGHT(false, 4015, "하이라이트 수정 실패"),
 
     PASSWORD_ENCRYPTION_ERROR(false, 4011, "비밀번호 암호화에 실패하였습니다."),
     PASSWORD_DECRYPTION_ERROR(false, 4012, "비밀번호 복호화에 실패하였습니다.");

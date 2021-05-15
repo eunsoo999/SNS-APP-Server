@@ -100,9 +100,8 @@ public class UserProvider {
 
     //나의 유저 팔로잉 List
     public List<FollowUser> retrieveMyFollowingList(String sort) throws BaseException{
-        // todo jwt
-        int loginIdx = 1;
         try{
+            int loginIdx = jwtService.getUserIdx();
             return userDao.getMyFollowing(loginIdx, sort);
         } catch (Exception exception){
             throw new BaseException(DATABASE_ERROR);
@@ -219,5 +218,27 @@ public class UserProvider {
             throw new BaseException(DATABASE_ERROR);
         }
 
+    }
+
+    public GetFollowUserRes getFollowerUser(int userIdx, int loginIdx) throws BaseException {
+        if (checkUserIdx(userIdx) == 0) {
+            throw new BaseException(USERS_IDX_NOT_EXISTS);
+        }
+        try {
+            // 유저의 팔로워리스트
+            List<FollowUser> getUserRes = userDao.getFollower(loginIdx ,userIdx);
+            // 추천 리스트
+            List<GetRecommendUsersRes> getRecommendUsersList = userDao.getRecommendUsers(loginIdx);
+            // 함께 아는 친구 카운트
+            String commonFollowCount = userDao.getCommonFollowCount(loginIdx, userIdx);
+            // 유저의 팔로워 수
+            String followerCount = userDao.getFollowerCount(userIdx);
+            // 유저의 팔로잉 수
+            String followingCount = userDao.getFollowingCount(userIdx);
+
+            return new GetFollowUserRes(commonFollowCount, followerCount, followingCount, getUserRes, getRecommendUsersList);
+        } catch (Exception exception) {
+            throw new BaseException(DATABASE_ERROR);
+        }
     }
 }

@@ -2,11 +2,9 @@ package com.example.demo.src.post;
 
 import com.example.demo.src.PostLike.model.GetPostLikes;
 import com.example.demo.src.PostLike.model.PostLike;
-import com.example.demo.src.follow.model.Follow;
-import com.example.demo.src.post.model.GetPostsFeedRes;
-import com.example.demo.src.post.model.GetPostsRes;
-import com.example.demo.src.post.model.Post;
-import com.example.demo.src.post.model.PostPostReq;
+import com.example.demo.src.place.model.Place;
+import com.example.demo.src.post.model.*;
+import com.example.demo.src.postImage.model.PostImage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -23,7 +21,8 @@ public class PostDao {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
-    public List<GetPostsFeedRes> getPosts(int loginIdx) {
+    // 메인 전체 피드
+    public List<GetPostsFeedRes> getPostsFeed(int loginIdx) {
         String getUsersQuery = "SELECT Post.idx AS 'postIdx', " +
                 "User.idx AS 'userIdx', " +
                 "(SELECT title FROM Place WHERE Place.idx = Post.placeIdx) AS placeTitle, " +
@@ -33,6 +32,8 @@ public class PostDao {
                 "(SELECT FORMAT(count(*), '#,#') " +
                 "FROM PostLike " +
                 "WHERE PostLike.postIdx = Post.idx) AS 'postLikeCount', " +
+                "CASE WHEN Post.idx IN (SELECT PostLike.postIdx FROM PostLike WHERE PostLike.userIdx = ? " +
+                "AND PostLike.status = 'Y') THEN true ELSE false END AS 'likeCheck', " +
                 "Post.contents AS 'postContents', " +
                 "(SELECT FORMAT(count(*), '#,#') " +
                 "FROM Comment " +
@@ -62,25 +63,27 @@ public class PostDao {
                         rs.getString("userProfileUrl"),
                         rs.getInt("postImgCount"),
                         rs.getInt("postLikeCount"),
+                        rs.getBoolean("likeCheck"),
                         rs.getString("postContents"),
                         rs.getString("commentCount"),
-                        rs.getString("postTimeStamp")), loginIdx, loginIdx);
+                        rs.getString("postTimeStamp")), loginIdx, loginIdx, loginIdx);
     }
 
-    public List<GetPostsFeedRes> getPostsFeedByUserIdx(int userIdx) {
+    //유저 게시물 피드
+    public List<GetPostsFeedRes> getPostsFeedByUserIdx(int userIdx, int loginIdx) {
         String getPostsFeedByUserIdxQuery = "SELECT Post.idx AS 'postIdx', User.idx AS 'userIdx', " +
-                "(SELECT title FROM Place WHERE Place.idx = Post.placeIdx) AS placeTitle, " +
-                "User.userId, " +
+                "(SELECT title FROM Place WHERE Place.idx = Post.placeIdx) AS placeTitle, User.userId, " +
                 "User.profileUrl AS 'userProfileUrl', " +
-                "(SELECT count(*) " +
-                "FROM PostImage " +
-                "WHERE Post.idx = PostImage.postIdx) AS 'postImgCount', " +
+                "(SELECT count(*) FROM PostImage WHERE Post.idx = PostImage.postIdx) AS 'postImgCount', " +
+                "CASE WHEN Post.idx IN (SELECT PostLike.postIdx FROM PostLike WHERE PostLike.userIdx = ? AND PostLike.status = 'Y') " +
+                "THEN true " +
+                "ELSE false " +
+                "END AS 'likeCheck', " +
                 "(SELECT FORMAT(count(*), '#,#') " +
-                "FROM PostLike " +
-                "WHERE PostLike.postIdx = Post.idx) AS 'postLikeCount', " +
-                "Post.contents AS 'postContents', " +
-                "(SELECT FORMAT(count(*), '#,#') " +
-                "FROM Comment WHERE Post.idx = Comment.postIdx) AS 'commentCount', " +
+                "FROM PostLike WHERE PostLike.postIdx = Post.idx) AS 'postLikeCount', " +
+                "Post.contents AS 'postContents', (SELECT FORMAT(count(*), '#,#') " +
+                "FROM Comment " +
+                "WHERE Post.idx = Comment.postIdx) AS 'commentCount', " +
                 "CASE WHEN TIMESTAMPDIFF(SECOND, Post.createdAt, CURRENT_TIMESTAMP()) <= 60 " +
                 "THEN concat(TIMESTAMPDIFF(SECOND, Post.createdAt, CURRENT_TIMESTAMP()), '초 전') " +
                 "WHEN TIMESTAMPDIFF(MINUTE , Post.createdAt, CURRENT_TIMESTAMP()) <= 60 " +
@@ -106,9 +109,10 @@ public class PostDao {
                         rs.getString("userProfileUrl"),
                         rs.getInt("postImgCount"),
                         rs.getInt("postLikeCount"),
+                        rs.getBoolean("likeCheck"),
                         rs.getString("postContents"),
                         rs.getString("commentCount"),
-                        rs.getString("postTimeStamp")), userIdx);
+                        rs.getString("postTimeStamp")), loginIdx, userIdx);
 
     }
 
@@ -137,8 +141,25 @@ public class PostDao {
                         rs.getString("checkCountStatus")), PostsByUserIdxParam);
     }
 
+    //Post 반환
+    public Post getPosts(int postIdx) {
+        String getPostsQuery = "select idx, userIdx, contents, placeIdx, commentOption, createdAt, updatedAt, status "
+                + "from Post where idx = ?";
+
+        return this.jdbcTemplate.queryForObject(getPostsQuery,
+                (rs, rowNum) -> new Post(
+                        rs.getInt("idx"),
+                        rs.getInt("userIdx"),
+                        rs.getString("contents"),
+                        rs.getInt("placeIdx"),
+                        rs.getString("commentOption"),
+                        rs.getTimestamp("createdAt"),
+                        rs.getTimestamp("updatedAt"),
+                        rs.getString("status")), postIdx);
+    }
+
     // Post 저장 idx 반환
-    public int createPost(PostPostReq postPostReq, int loginIdx) {
+    public int createPost(PostPostsReq postPostReq, int loginIdx) {
         String createPostQuery = "INSERT INTO Post (userIdx, contents, placeIdx, commentOption) " +
                 "VALUES (?, ?, ?, ?)";
         Object[] createPostImageParams = new Object[]{loginIdx, postPostReq.getContents(),
@@ -150,7 +171,7 @@ public class PostDao {
         return this.jdbcTemplate.queryForObject(lastInsertIdQuery,int.class);
     }
 
-    public void deletePosts(int postIdx) {
+    public void patchPostsStatus(int postIdx) {
         String deletePostQuery = "UPDATE Post set status = 'N' where idx = ?";
         this.jdbcTemplate.update(deletePostQuery, postIdx);
     }
@@ -184,5 +205,11 @@ public class PostDao {
                         rs.getString("userId"),
                         rs.getString("name"),
                         rs.getString("followCheck")), postLikedUsersParams);
+    }
+
+    public int patchPost(PatchPostsReq patchPostsReq, int postIdx) {
+        String deletePostQuery = "UPDATE Post set contents = ?, placeIdx = ? where idx = ?";
+        this.jdbcTemplate.update(deletePostQuery, patchPostsReq.getContents(), patchPostsReq.getPlaceIdx() ,postIdx);
+        return postIdx;
     }
 }

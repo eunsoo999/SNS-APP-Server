@@ -33,12 +33,28 @@ public class PlaceController {
      */
     @ResponseBody
     @GetMapping("")
-    public BaseResponse<List<GetSearchPlaceRes>> getSearchPlaces(@RequestParam String search) {
+    public BaseResponse<List<GetSearchPlaceRes>> getSearchPlaces(@RequestParam(required = false) String search) {
         if (search.isEmpty()) {
             return new BaseResponse<>(SEARCH_EMPTY_KEYWORD);
         }
         try {
             List<GetSearchPlaceRes> getSearchPlaceResList = placeProvider.getSearchPlaces(search);
+            return new BaseResponse<>(getSearchPlaceResList);
+        } catch (BaseException exception) {
+            return new BaseResponse<>(exception.getStatus());
+        }
+    }
+
+    /**
+     * 사용자 위치 기반 근처 장소 조회 (위도, 경도)
+     * [GET] /places/location?lat=33.23&lon=
+     * @return BaseResponse<GetSearchPlaceRes>
+     */
+    @ResponseBody
+    @GetMapping("/location")
+    public BaseResponse<List<GetSearchPlaceRes>> getPlacesBylocation(@RequestParam double lat, @RequestParam double lon) {
+        try {
+            List<GetSearchPlaceRes> getSearchPlaceResList = placeProvider.getPlacesByLocation(lat, lon);
             return new BaseResponse<>(getSearchPlaceResList);
         } catch (BaseException exception) {
             return new BaseResponse<>(exception.getStatus());

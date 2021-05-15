@@ -16,13 +16,20 @@ public class HighlightStoryDao {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
-    public int createHighlightStory(PostHighlightStoryReq postHighlightStoryReq) {
+    public int createHighlightStory(int storysIdx, int highlightIdx) {
         String createHighlightStoryQuery = "INSERT INTO HighlightStory (highlightIdx, storyIdx) VALUES (?, ?)";
-        Object[] createHighlightStoryParams = new Object[]{postHighlightStoryReq.getHighlightIdx(), postHighlightStoryReq.getStoryIdx()};
+        Object[] createHighlightStoryParams = new Object[]{highlightIdx, storysIdx};
 
         this.jdbcTemplate.update(createHighlightStoryQuery, createHighlightStoryParams);
 
         String lastInsertIdQuery = "select last_insert_id()";
         return this.jdbcTemplate.queryForObject(lastInsertIdQuery,int.class);
+    }
+
+    public int updateHighlightStoryStatus(int highlightIdx) {
+        String updateStatusQuery = "UPDATE HighlightStory SET status = 'N' WHERE highlightIdx = ? ";
+        this.jdbcTemplate.update(updateStatusQuery, highlightIdx);
+
+        return highlightIdx;
     }
 }
